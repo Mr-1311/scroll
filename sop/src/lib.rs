@@ -3,12 +3,13 @@ enum OrgElement {
     Section(Vec<OrgElement>),
     Paragraph(String),
     Headline(u8, String),
+    Keyword(String, String),
 }
 
 fn create_headline(raw_value: &str) -> OrgElement {
     let mut level: u8 = 0;
-    for char in raw_value.chars() {
-        if char == '*' {
+    for c in raw_value.chars() {
+        if c == '*' {
             level += 1;
             continue;
         }
@@ -19,6 +20,24 @@ fn create_headline(raw_value: &str) -> OrgElement {
         title = t.to_string();
     }
     OrgElement::Headline(level, title)
+}
+fn create_keyword(raw_value: &str) -> OrgElement {
+    let mut key = String::new();
+    let mut val = String::new();
+
+    let mut is_val = false;
+    for c in raw_value.get(2..).unwrap().chars() {
+        if c == ':' {
+            is_val = true;
+            continue;
+        }
+        if !is_val {
+            key.push(c);
+        } else {
+            val.push(c);
+        }
+    }
+    OrgElement::Keyword(key.trim().to_uppercase(), val.trim().to_string())
 }
 
 #[derive(Debug)]
@@ -114,16 +133,20 @@ impl OrgParser {
         use regex::Regex;
 
         let re = Regex::new(
-            r"(?m)(?P<headlines>^\*+ .*\n?)|(?P<list>^[ \t]*(?:-|\+|[ \t]+\*|\d+\.|\d+\)) .*\n?)|(?P<key>^[ \t]*#\+.*:.*\n)|(?P<table>^ *\|.*\n)",
+            r"(?m)(?P<headline>^\*+ .*\n?)|(?P<list>^[ \t]*(?:-|\+|[ \t]+\*|\d+\.|\d+\)) .*\n?)|(?P<keyword>^[ \t]*#\+.*:.*\n)|(?P<table>^ *\|.*\n)",
         )
         .unwrap();
 
         let mut doc = OrgAST::new();
 
         for cap in re.captures_iter(&self.raw_str) {
-            if let Some(c) = cap.name("headlines") {
+            if let Some(c) = cap.name("headline") {
                 doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
                 doc.add_child(create_headline(c.as_str()));
+            }
+            if let Some(c) = cap.name("keyword") {
+                doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
+                doc.add_child(create_keyword(c.as_str()));
             }
             // match cap.name("key") {
             //     Some(k) => println!(
