@@ -22,15 +22,15 @@ fn create_headline(raw_value: &str) -> OrgElement {
 }
 
 #[derive(Debug)]
-struct OrgDocument {
+struct OrgAST {
     child: OrgElement,
     last_element_index: usize,
     depth: u8,
     section_stack: Vec<u8>,
 }
-impl<'a> OrgDocument {
-    fn new() -> OrgDocument {
-        OrgDocument {
+impl OrgAST {
+    fn new() -> OrgAST {
+        OrgAST {
             child: OrgElement::Section(Vec::new()),
             last_element_index: 0,
             depth: 0,
@@ -114,18 +114,17 @@ impl OrgParser {
         use regex::Regex;
 
         let re = Regex::new(
-            r"(?m)(?P<headlines>^\*+ .*\n?)|(?P<list>^ *(?:-|\+| +\*|\d+\.|\d+\)) .*\n?)|(?P<key>^ *#\+.*:.*\n?)|(?P<table>^ *\|.*\n)",
+            r"(?m)(?P<headlines>^\*+ .*\n?)|(?P<list>^[ \t]*(?:-|\+|[ \t]+\*|\d+\.|\d+\)) .*\n?)|(?P<key>^[ \t]*#\+.*:.*\n)|(?P<table>^ *\|.*\n)",
         )
         .unwrap();
 
-        let mut doc = OrgDocument::new();
+        let mut doc = OrgAST::new();
 
         for cap in re.captures_iter(&self.raw_str) {
             match cap.name("headlines") {
                 Some(c) => {
                     doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
                     doc.add_child(create_headline(c.as_str()));
-                    // doc.add_child(Rc::new(RefCell::new(OrgHeadline::new(&c.as_str()))))
                     // println!(
                     //     "group name: headlines, val: {:?}, start: {}, end: {}",
                     //     &c.as_str(),
