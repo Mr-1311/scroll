@@ -57,7 +57,7 @@ impl OrgAST {
         }
         if !cur_parag_str.is_empty() {
             cur_parag_str.pop();
-            self.add_child(OrgElement::Paragraph(cur_parag_str.clone()));
+            self.add_child(OrgElement::Paragraph(cur_parag_str));
         }
         self.last_element_index = end;
     }
@@ -66,7 +66,7 @@ impl OrgAST {
         match child {
             OrgElement::Headline(lv, _) => {
                 while let Some(s) = self.section_stack.last() {
-                    if s >= &lv {
+                    if *s >= lv {
                         self.depth -= 1;
                         self.section_stack.pop();
                     } else {
@@ -86,7 +86,7 @@ impl OrgAST {
         }
         if let OrgElement::Section(v) = s {
             match &child {
-                OrgElement::Headline(lv, val) => {
+                OrgElement::Headline(lv, _) => {
                     self.section_stack.push(*lv);
                     self.depth += 1;
                     v.push(child);
@@ -107,7 +107,7 @@ impl OrgParser {
     pub fn create_from_str(raw_str: String) -> OrgParser {
         OrgParser { raw_str }
     }
-    pub fn create_from_path(path: String) -> OrgParser {
+    pub fn create_from_path(_path: String) -> OrgParser {
         todo!()
     }
     pub fn parse(&self) {
@@ -121,19 +121,10 @@ impl OrgParser {
         let mut doc = OrgAST::new();
 
         for cap in re.captures_iter(&self.raw_str) {
-            match cap.name("headlines") {
-                Some(c) => {
-                    doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
-                    doc.add_child(create_headline(c.as_str()));
-                    // println!(
-                    //     "group name: headlines, val: {:?}, start: {}, end: {}",
-                    //     &c.as_str(),
-                    //     &c.start(),
-                    //     &c.end()
-                    // );
-                }
-                None => (),
-            };
+            if let Some(c) = cap.name("headlines") {
+                doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
+                doc.add_child(create_headline(c.as_str()));
+            }
             // match cap.name("key") {
             //     Some(k) => println!(
             //         "group name: key, val: {:?}, start: {}, end: {}",
