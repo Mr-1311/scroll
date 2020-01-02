@@ -41,7 +41,7 @@ fn create_keyword(raw_value: &str) -> OrgElement {
 }
 
 #[derive(Debug)]
-struct OrgAST {
+pub struct OrgAST {
     child: OrgElement,
     last_element_index: usize,
     depth: u8,
@@ -126,10 +126,13 @@ impl OrgParser {
     pub fn create_from_str(raw_str: String) -> OrgParser {
         OrgParser { raw_str }
     }
-    pub fn create_from_path(_path: String) -> OrgParser {
-        todo!()
+    pub fn create_from_path(path: String) -> OrgParser {
+        OrgParser::create_from_str(
+            std::fs::read_to_string(path)
+                .expect("Something went wrong reading the file. Check path, permissions etc.."),
+        )
     }
-    pub fn parse(&self) {
+    pub fn create_ast(&self) -> OrgAST {
         use regex::Regex;
 
         let re = Regex::new(
@@ -169,9 +172,12 @@ impl OrgParser {
         }
 
         doc.handle_undetect_str(self.raw_str.len(), self.raw_str.len(), &self.raw_str);
-        println!("{:#?}", doc);
-        println!("{}", OrgParser::generate_html(&doc.child));
+        doc
     }
+    pub fn create_html(&self) -> String {
+        OrgParser::generate_html(&self.create_ast().child)
+    }
+
     fn generate_html(section: &OrgElement) -> String {
         let mut out_html = String::new();
 

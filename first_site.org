@@ -1,0 +1,9 @@
+#+TITLE: first_site
+* Hello Magical World!
+This is the first actual site that generated with scroll!!
+
+<2020-01-03 Fri>
+
+
+
+
