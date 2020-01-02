@@ -17,7 +17,7 @@ fn create_headline(raw_value: &str) -> OrgElement {
     }
     let mut title = String::from("");
     if let Some(t) = raw_value.get((level + 1) as usize..) {
-        title = t.to_string();
+        title = t.trim().to_string();
     }
     OrgElement::Headline(level, title)
 }
@@ -148,15 +148,6 @@ impl OrgParser {
                 doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
                 doc.add_child(create_keyword(c.as_str()));
             }
-            // match cap.name("key") {
-            //     Some(k) => println!(
-            //         "group name: key, val: {:?}, start: {}, end: {}",
-            //         &k.as_str(),
-            //         &k.start(),
-            //         &k.end()
-            //     ),
-            //     None => (),
-            // };
             // match cap.name("list") {
             //     Some(k) => println!(
             //         "group name: list, val: {:?}, start: {}, end: {}",
@@ -179,5 +170,29 @@ impl OrgParser {
 
         doc.handle_undetect_str(self.raw_str.len(), self.raw_str.len(), &self.raw_str);
         println!("{:#?}", doc);
+        println!("{}", OrgParser::generate_html(&doc.child));
+    }
+    fn generate_html(section: &OrgElement) -> String {
+        let mut out_html = String::new();
+
+        if let OrgElement::Section(v) = section {
+            for el in v {
+                match el {
+                    OrgElement::Headline(lv, title) => {
+                        out_html.push_str(&format!("<h{l}>{}</h{l}>\n", title, l = lv));
+                    }
+                    OrgElement::Paragraph(p) => {
+                        out_html.push_str(&format!("<p>{}</p>\n", p));
+                    }
+                    OrgElement::Section(_) => {
+                        out_html
+                            .push_str(&format!("<div>\n{}</div>\n", OrgParser::generate_html(el)));
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        out_html
     }
 }
