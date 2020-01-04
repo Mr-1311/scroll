@@ -1,9 +1,11 @@
 #[derive(Debug)]
 enum OrgElement {
     Section(Vec<OrgElement>),
-    Paragraph(String),
-    Headline(u8, String),
-    Keyword(String, String),
+    Paragraph { childs: Vec<OrgElement> },
+    Headline { level: u8, title: String },
+    Keyword { key: String, value: String },
+    Text(String),
+    Bold(String),
 }
 
 fn create_headline(raw_value: &str) -> OrgElement {
@@ -19,7 +21,7 @@ fn create_headline(raw_value: &str) -> OrgElement {
     if let Some(t) = raw_value.get((level + 1) as usize..) {
         title = t.trim().to_string();
     }
-    OrgElement::Headline(level, title)
+    OrgElement::Headline { level, title }
 }
 fn create_keyword(raw_value: &str) -> OrgElement {
     let mut key = String::new();
@@ -37,7 +39,10 @@ fn create_keyword(raw_value: &str) -> OrgElement {
             val.push(c);
         }
     }
-    OrgElement::Keyword(key.trim().to_uppercase(), val.trim().to_string())
+    OrgElement::Keyword {
+        key: key.trim().to_uppercase(),
+        value: val.trim().to_string(),
+    }
 }
 
 #[derive(Debug)]
@@ -63,8 +68,9 @@ impl OrgAST {
                 if line == "" && !cur_parag_str.is_empty() {
                     cur_parag_str.pop();
 
-                    self.add_child(OrgElement::Paragraph(cur_parag_str.clone()));
-
+                    self.add_child(OrgElement::Paragraph {
+                        childs: vec![OrgElement::Text(cur_parag_str.clone())],
+                    });
                     cur_parag_str.clear();
                     continue;
                 }
@@ -76,16 +82,18 @@ impl OrgAST {
         }
         if !cur_parag_str.is_empty() {
             cur_parag_str.pop();
-            self.add_child(OrgElement::Paragraph(cur_parag_str));
+            self.add_child(OrgElement::Paragraph {
+                childs: vec![OrgElement::Text(cur_parag_str.clone())],
+            });
         }
         self.last_element_index = end;
     }
 
     fn add_child(&mut self, child: OrgElement) {
         match child {
-            OrgElement::Headline(lv, _) => {
+            OrgElement::Headline { level, title: _ } => {
                 while let Some(s) = self.section_stack.last() {
-                    if *s >= lv {
+                    if *s >= level {
                         self.depth -= 1;
                         self.section_stack.pop();
                     } else {
@@ -105,8 +113,8 @@ impl OrgAST {
         }
         if let OrgElement::Section(v) = s {
             match &child {
-                OrgElement::Headline(lv, _) => {
-                    self.section_stack.push(*lv);
+                OrgElement::Headline { level, title: _ } => {
+                    self.section_stack.push(*level);
                     self.depth += 1;
                     v.push(child);
                     v.push(OrgElement::Section(Vec::new()));
@@ -184,11 +192,17 @@ impl OrgParser {
         if let OrgElement::Section(v) = section {
             for el in v {
                 match el {
-                    OrgElement::Headline(lv, title) => {
-                        out_html.push_str(&format!("<h{l}>{}</h{l}>\n", title, l = lv));
+                    OrgElement::Headline { level, title } => {
+                        out_html.push_str(&format!("<h{l}>{}</h{l}>\n", title, l = level));
                     }
-                    OrgElement::Paragraph(p) => {
-                        out_html.push_str(&format!("<p>{}</p>\n", p));
+                    OrgElement::Paragraph { childs } => {
+                        let mut paragraph = String::new();
+                        for c in childs {
+                            if let OrgElement::Text(s) = c {
+                                paragraph.push_str(s);
+                            }
+                        }
+                        out_html.push_str(&format!("<p>{}</p>\n", paragraph));
                     }
                     OrgElement::Section(_) => {
                         out_html
