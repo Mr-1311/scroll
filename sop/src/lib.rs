@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::collections::HashSet;
 
 #[macro_use]
 extern crate lazy_static;
@@ -8,8 +9,10 @@ lazy_static! {
         r"(?m)(?P<headline>^\*+ .*\n?)|(?P<list>^[ \t]*(?:-|\+|[ \t]+\*|\d+\.|\d+\)) .*\n?)|(?P<keyword>^[ \t]*#\+.*:.*\n)|(?P<table>^ *\|.*\n)"
     ).unwrap();
     static ref REGEX_TEXT: Regex = Regex::new(
-        r"(?m)(?P<bold>\*\w+(?:\s+\w+)*\*)|(?P<italic>/\w+(?:\s+\w+)*/)|(?P<code>~\w+(?:\s+\w+)*~)|(?P<underline>_\w+(?:\s+\w+)*_)|(?P<strike>\+\w+(?:\s+\w+)*\+)|(?P<link>\[\[.+\]\])"
+        r"(?m)(?P<bold>\*\w+(?:\s+\w+)*\*)|(?P<italic>/\w+(?:\s+\w+)*/)|(?P<code>~\w+(?:\s+\w+)*~)|(?P<underline>_\w+(?:\s+\w+)*_)|(?P<strike>\+\w+(?:\s+\w+)*\+)|(?P<link>\[\[.+?\]\])"
     ).unwrap();
+    static ref IMG_TYPES: HashSet<&'static str> =
+        vec!["apng", "bmp", "gif", "ico", "cur", "jpg", "jpeg", "jfif", "pjpeg", "pjp", "png", "svg", "tif", "tiff", "webp"].into_iter().collect();
 }
 
 #[derive(Debug)]
@@ -39,10 +42,10 @@ enum OrgElement {
     StrikeThrough(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum LinkType {
-    URL,
-    FILE,
+    A,
+    IMG,
 }
 fn create_headline(raw_value: &str) -> OrgElement {
     let mut level: u8 = 0;
@@ -84,6 +87,54 @@ fn create_keyword(raw_value: &str) -> OrgElement {
 fn create_paragraph(raw_value: String) -> OrgElement {
     OrgElement::Paragraph {
         childs: handle_text(raw_value),
+    }
+}
+fn create_link(raw_value: &str) -> OrgElement {
+    let mut link = String::new();
+    let mut desc = String::new();
+    let mut is_escape = false;
+    let mut is_link = true;
+    for c in raw_value[2..].chars() {
+        if c == '\\' {
+            is_escape = true;
+            continue;
+        }
+        if (c == ']' || c == '[') && !is_escape {
+            is_link = false;
+            continue;
+        }
+        if is_link {
+            link.push(c);
+        } else {
+            desc.push(c);
+        }
+        if is_escape {
+            is_escape = false;
+        }
+    }
+    if let Some(i) = link.rfind('.') {
+        if (link.len() - i) - 1 < 6 {
+            if IMG_TYPES.contains(&link.get(i + 1..).unwrap().to_lowercase()[..]) {
+                return OrgElement::Link {
+                    link_type: LinkType::IMG,
+                    link: link,
+                    desc: if desc.is_empty() {
+                        Vec::new()
+                    } else {
+                        handle_text(desc)
+                    },
+                };
+            }
+        }
+    }
+    OrgElement::Link {
+        link_type: LinkType::A,
+        link: link,
+        desc: if desc.is_empty() {
+            Vec::new()
+        } else {
+            handle_text(desc)
+        },
     }
 }
 
@@ -136,6 +187,13 @@ fn handle_text(raw_value: String) -> Vec<OrgElement> {
             ));
             cur_index = c.end();
         }
+        if let Some(c) = cap.name("link") {
+            texts.push(OrgElement::Text(
+                raw_value.get(cur_index..c.start()).unwrap().to_owned(),
+            ));
+            texts.push(create_link(c.as_str()));
+            cur_index = c.end();
+        }
     }
     texts.push(OrgElement::Text(
         raw_value.get(cur_index..).unwrap().to_owned(),
@@ -152,6 +210,25 @@ fn generate_html_for_text(t: &Vec<OrgElement>) -> String {
             OrgElement::Underline(s) => out.push_str(&format!("<u>{}</u>", s)),
             OrgElement::StrikeThrough(s) => out.push_str(&format!("<s>{}</s>", s)),
             OrgElement::Code(s) => out.push_str(&format!("<code>{}</code>", s)),
+            OrgElement::Link {
+                link_type,
+                link,
+                desc,
+            } => {
+                if link_type == &LinkType::IMG {
+                    out.push_str(&format!("<img src=\"{}\" alt=\"img\"/>", link));
+                } else {
+                    out.push_str(&format!(
+                        "<a href=\"{}\">{}</a>",
+                        link,
+                        if desc.is_empty() {
+                            link.clone()
+                        } else {
+                            generate_html_for_text(desc)
+                        }
+                    ));
+                }
+            }
             _ => (),
         }
     }
