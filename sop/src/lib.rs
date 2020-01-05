@@ -23,6 +23,7 @@ enum OrgElement {
     },
     Headline {
         level: u8,
+        id: String,
         title: Vec<OrgElement>,
     },
     Keyword {
@@ -56,11 +57,16 @@ fn create_headline(raw_value: &str) -> OrgElement {
         }
         break;
     }
+
     let mut title = Vec::new();
     if let Some(t) = raw_value.get((level + 1) as usize..) {
         title = handle_text(t.trim().to_owned());
     }
-    OrgElement::Headline { level, title }
+    OrgElement::Headline {
+        level,
+        id: generate_html_id(&title),
+        title,
+    }
 }
 
 fn create_keyword(raw_value: &str) -> OrgElement {
@@ -234,6 +240,40 @@ fn generate_html_for_text(t: &Vec<OrgElement>) -> String {
     }
     out
 }
+fn generate_html_id(texts: &Vec<OrgElement>) -> String {
+    fn remove_spaces(s: &str) -> String {
+        s.trim()
+            .chars()
+            .map(|c| match c {
+                ' ' | '\t' => '-',
+                _ => c,
+            })
+            .collect()
+    }
+
+    let mut id = String::new();
+    use OrgElement::*;
+    for e in texts {
+        match e {
+            Text(s) | Bold(s) | Italic(s) | Underline(s) | StrikeThrough(s) | Code(s) => {
+                id.push_str(&s.to_lowercase())
+            }
+            Link {
+                link_type: _,
+                link,
+                desc,
+            } => {
+                if desc.is_empty() {
+                    id.push_str(link);
+                } else {
+                    id.push_str(&generate_html_id(desc)[..]);
+                }
+            }
+            _ => (),
+        }
+    }
+    remove_spaces(&id.trim())
+}
 
 #[derive(Debug)]
 pub struct OrgAST {
@@ -277,7 +317,11 @@ impl OrgAST {
 
     fn add_child(&mut self, child: OrgElement) {
         match child {
-            OrgElement::Headline { level, title: _ } => {
+            OrgElement::Headline {
+                level,
+                id: _,
+                title: _,
+            } => {
                 while let Some(s) = self.section_stack.last() {
                     if *s >= level {
                         self.depth -= 1;
@@ -299,7 +343,11 @@ impl OrgAST {
         }
         if let OrgElement::Section(v) = s {
             match &child {
-                OrgElement::Headline { level, title: _ } => {
+                OrgElement::Headline {
+                    level,
+                    id: _,
+                    title: _,
+                } => {
                     self.section_stack.push(*level);
                     self.depth += 1;
                     v.push(child);
@@ -372,9 +420,10 @@ impl OrgParser {
         if let OrgElement::Section(v) = section {
             for el in v {
                 match el {
-                    OrgElement::Headline { level, title } => {
+                    OrgElement::Headline { level, id, title } => {
                         out_html.push_str(&format!(
-                            "<h{l}>{}</h{l}>\n",
+                            "<h{l} id=\"{}\">{}</h{l}>\n",
+                            id,
                             generate_html_for_text(title),
                             l = if level > &6 { &6u8 } else { level }
                         ));
