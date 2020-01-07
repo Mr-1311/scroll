@@ -277,6 +277,37 @@ fn generate_html_for_text(t: &[OrgElement]) -> String {
     }
     out
 }
+fn generate_html_for_paragraph(el: &[OrgElement]) -> String {
+    format!("<p>{}</p>\n", generate_html_for_text(el))
+}
+
+fn generate_html_for_list(t: &ListType, els: &[OrgElement]) -> String {
+    let mut list_content = String::new();
+    for e in els {
+        match e {
+            OrgElement::List {
+                list_type, items, ..
+            } => {
+                list_content.push_str(&generate_html_for_list(list_type, items));
+            }
+            OrgElement::ListItem(childs, _) => {
+                list_content.push_str(&generate_html_for_list_item(childs));
+            }
+            OrgElement::Paragraph { childs } => {
+                list_content.push_str(&generate_html_for_paragraph(childs));
+            }
+            _ => println!("This type can not add to List: {:#?}", e),
+        }
+    }
+
+    if t == &ListType::UNORDERED {
+        return format!("<ul>\n{}</ul>\n", list_content);
+    }
+    format!("<ol>\n{}</ol>\n", list_content)
+}
+fn generate_html_for_list_item(els: &[OrgElement]) -> String {
+    format!("<li>{}</li>\n", generate_html_for_text(&els))
+}
 fn generate_html_id(texts: &[OrgElement]) -> String {
     fn remove_spaces(s: &str) -> String {
         s.trim()
@@ -531,8 +562,14 @@ impl OrgParser {
                             l = if *level > 6 { &6u8 } else { level }
                         ));
                     }
+                    OrgElement::List {
+                        list_type, items, ..
+                    } => {
+                        out_html.push_str(&generate_html_for_list(list_type, items));
+                    }
+
                     OrgElement::Paragraph { childs } => {
-                        out_html.push_str(&format!("<p>{}</p>\n", generate_html_for_text(childs)));
+                        out_html.push_str(&generate_html_for_paragraph(childs));
                     }
                     OrgElement::Section(_) => {
                         out_html
