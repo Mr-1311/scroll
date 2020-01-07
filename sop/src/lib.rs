@@ -130,23 +130,23 @@ fn create_link(raw_value: &str) -> OrgElement {
         }
     }
     if let Some(i) = link.rfind('.') {
-        if (link.len() - i) - 1 < 6 {
-            if IMG_TYPES.contains(&link.get(i + 1..).unwrap().to_lowercase()[..]) {
-                return OrgElement::Link {
-                    link_type: LinkType::IMG,
-                    link: link,
-                    desc: if desc.is_empty() {
-                        Vec::new()
-                    } else {
-                        handle_text(desc)
-                    },
-                };
-            }
+        if (link.len() - i) - 1 < 6
+            && IMG_TYPES.contains(&link.get(i + 1..).unwrap().to_lowercase()[..])
+        {
+            return OrgElement::Link {
+                link_type: LinkType::IMG,
+                link,
+                desc: if desc.is_empty() {
+                    Vec::new()
+                } else {
+                    handle_text(desc)
+                },
+            };
         }
     }
     OrgElement::Link {
         link_type: LinkType::A,
-        link: link,
+        link,
         desc: if desc.is_empty() {
             Vec::new()
         } else {
@@ -243,11 +243,11 @@ fn handle_text(raw_value: String) -> Vec<OrgElement> {
     ));
     texts
 }
-fn generate_html_for_text(t: &Vec<OrgElement>) -> String {
+fn generate_html_for_text(t: &[OrgElement]) -> String {
     let mut out = String::new();
     for e in t {
         match e {
-            OrgElement::Text(s) => out.push_str(&format!("{}", s)),
+            OrgElement::Text(s) => out.push_str(&s.to_string()),
             OrgElement::Bold(s) => out.push_str(&format!("<b>{}</b>", s)),
             OrgElement::Italic(s) => out.push_str(&format!("<i>{}</i>", s)),
             OrgElement::Underline(s) => out.push_str(&format!("<u>{}</u>", s)),
@@ -277,7 +277,7 @@ fn generate_html_for_text(t: &Vec<OrgElement>) -> String {
     }
     out
 }
-fn generate_html_id(texts: &Vec<OrgElement>) -> String {
+fn generate_html_id(texts: &[OrgElement]) -> String {
     fn remove_spaces(s: &str) -> String {
         s.trim()
             .chars()
@@ -295,11 +295,7 @@ fn generate_html_id(texts: &Vec<OrgElement>) -> String {
             Text(s) | Bold(s) | Italic(s) | Underline(s) | StrikeThrough(s) | Code(s) => {
                 id.push_str(&s.to_lowercase())
             }
-            Link {
-                link_type: _,
-                link,
-                desc,
-            } => {
+            Link { link, desc, .. } => {
                 if desc.is_empty() {
                     id.push_str(link);
                 } else {
@@ -357,18 +353,15 @@ impl OrgAST {
         }
         if !cur_parag.is_empty() {
             cur_parag.pop();
-            self.add_child(create_paragraph(cur_parag.clone()));
+            self.add_child(create_paragraph(cur_parag));
         }
         self.last_element_index = end;
     }
 
     fn add_child(&mut self, child: OrgElement) {
+        #[allow(clippy::single_match)]
         match child {
-            OrgElement::Headline {
-                level,
-                id: _,
-                title: _,
-            } => {
+            OrgElement::Headline { level, .. } => {
                 while let Some(s) = self.section_stack.last() {
                     if *s >= level {
                         self.depth -= 1;
@@ -390,11 +383,7 @@ impl OrgAST {
         }
         if let OrgElement::Section(v) = s {
             match &child {
-                OrgElement::Headline {
-                    level,
-                    id: _,
-                    title: _,
-                } => {
+                OrgElement::Headline { level, .. } => {
                     self.section_stack.push(*level);
                     self.depth += 1;
                     v.push(child);
@@ -413,13 +402,8 @@ impl OrgAST {
                         self.list_indentation = ind;
                         return;
                     }
-                    if let Some(mut el) = v.last_mut() {
-                        if let OrgElement::List {
-                            list_type: _,
-                            indentation,
-                            items,
-                        } = el
-                        {
+                    if let Some(el) = v.last_mut() {
+                        if let OrgElement::List { items, .. } = el {
                             add_to_list(items, self.list_indentation, child);
                         } else {
                             v.push(create_list(r))
@@ -444,30 +428,16 @@ impl OrgAST {
                         }
                     }
 
-                    if ind >= self.list_indentation + 1 {
-                        if let Some(mut el) = v.last_mut() {
+                    if ind > self.list_indentation {
+                        if let Some(el) = v.last_mut() {
                             let mut last_el = el;
-                            loop {
-                                if let OrgElement::List {
-                                    list_type: _,
-                                    indentation,
-                                    items,
-                                } = last_el
-                                {
-                                    if let OrgElement::List {
-                                        list_type: _,
-                                        indentation: _,
-                                        items: _,
-                                    } = items.last().unwrap()
-                                    {
-                                        last_el = items.last_mut().unwrap();
-                                        continue;
-                                    }
-                                    items.push(child);
-                                    return;
-                                } else {
-                                    break;
+                            while let OrgElement::List { items, .. } = last_el {
+                                if let OrgElement::List { .. } = items.last().unwrap() {
+                                    last_el = items.last_mut().unwrap();
+                                    continue;
                                 }
+                                items.push(child);
+                                return;
                             }
                         }
                     }
@@ -492,9 +462,7 @@ fn add_to_list(it: &mut Vec<OrgElement>, ind: i8, c: OrgElement) {
     }
 
     if let OrgElement::List {
-        list_type: _,
-        indentation,
-        items,
+        indentation, items, ..
     } = it.last_mut().unwrap()
     {
         if item_ind < *indentation {
@@ -502,14 +470,10 @@ fn add_to_list(it: &mut Vec<OrgElement>, ind: i8, c: OrgElement) {
         } else {
             add_to_list(items, *indentation, c);
         }
-    } else {
-        if item_ind <= ind {
-            it.push(c);
-        } else {
-            if let OrgElement::ListItem(_, r) = c {
-                it.push(create_list(&r))
-            }
-        }
+    } else if item_ind <= ind {
+        it.push(c);
+    } else if let OrgElement::ListItem(_, r) = c {
+        it.push(create_list(&r))
     }
 }
 
@@ -543,20 +507,6 @@ impl OrgParser {
             if let Some(c) = cap.name("list") {
                 doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
                 doc.add_child(create_list_item(c.as_str()));
-                // let mut nl = 0u8;
-                // for c in self.raw_str.get(c.end() - 1..).unwrap().chars() {
-                //     if c == '\n' {
-                //         nl += 1;
-                //         if nl >= 3 {
-                //             doc.list_indentation = 0;
-                //             break;
-                //         }
-                //         continue;
-                //     }
-                //     if c != ' ' {
-                //         break;
-                //     }
-                // }
             }
         }
 
@@ -579,7 +529,7 @@ impl OrgParser {
                             "<h{l} id=\"{}\">{}</h{l}>\n",
                             id,
                             generate_html_for_text(title),
-                            l = if level > &6 { &6u8 } else { level }
+                            l = if *level > 6 { &6u8 } else { level }
                         ));
                     }
                     OrgElement::Paragraph { childs } => {
