@@ -26,6 +26,12 @@ enum OrgElement {
         id: String,
         title: Vec<OrgElement>,
     },
+    List {
+        list_type: ListType,
+        indentation: i8,
+        items: Vec<OrgElement>,
+    },
+    ListItem(Vec<OrgElement>, String),
     Keyword {
         key: String,
         value: String,
@@ -47,6 +53,11 @@ enum OrgElement {
 enum LinkType {
     A,
     IMG,
+}
+#[derive(Debug, PartialEq)]
+enum ListType {
+    ORDERED,
+    UNORDERED,
 }
 fn create_headline(raw_value: &str) -> OrgElement {
     let mut level: u8 = 0;
@@ -142,6 +153,32 @@ fn create_link(raw_value: &str) -> OrgElement {
             handle_text(desc)
         },
     }
+}
+fn create_list(raw_value: &str) -> OrgElement {
+    let mut list_type = ListType::ORDERED;
+    let mut indentation = 0i8;
+    for c in raw_value.chars() {
+        if c == '-' || c == '+' || c == '*' {
+            list_type = ListType::UNORDERED;
+            break;
+        }
+        if c != ' ' {
+            break;
+        }
+        indentation += 1;
+    }
+
+    OrgElement::List {
+        list_type,
+        indentation,
+        items: vec![create_list_item(raw_value)],
+    }
+}
+fn create_list_item(raw_value: &str) -> OrgElement {
+    OrgElement::ListItem(
+        handle_text(raw_value.trim().get(2..).unwrap().to_string()),
+        raw_value.to_string(),
+    )
 }
 
 fn handle_text(raw_value: String) -> Vec<OrgElement> {
@@ -281,6 +318,7 @@ pub struct OrgAST {
     last_element_index: usize,
     depth: u8,
     section_stack: Vec<u8>,
+    list_indentation: i8,
 }
 impl OrgAST {
     fn new() -> OrgAST {
@@ -289,18 +327,27 @@ impl OrgAST {
             last_element_index: 0,
             depth: 0,
             section_stack: Vec::new(),
+            list_indentation: 0,
         }
     }
     fn handle_undetect_str(&mut self, start: usize, end: usize, raw_str: &str) {
         let mut cur_parag = String::new();
+        let mut em_lns = 0u8;
         if let Some(s) = raw_str.get(self.last_element_index..start) {
             for line in s.lines() {
-                if line == "" && !cur_parag.is_empty() {
-                    cur_parag.pop();
+                if line == "" {
+                    em_lns += 1;
+                    if em_lns >= 2 {
+                        em_lns = 0;
+                        self.list_indentation = -1;
+                    }
+                    if !cur_parag.is_empty() {
+                        cur_parag.pop();
 
-                    self.add_child(create_paragraph(cur_parag.clone()));
-                    cur_parag.clear();
-                    continue;
+                        self.add_child(create_paragraph(cur_parag.clone()));
+                        cur_parag.clear();
+                        continue;
+                    }
                 }
                 if line != "" {
                     cur_parag.push_str(line);
@@ -353,7 +400,114 @@ impl OrgAST {
                     v.push(child);
                     v.push(OrgElement::Section(Vec::new()));
                 }
+                OrgElement::ListItem(_, r) => {
+                    let mut ind = 0i8;
+                    for c in r.chars() {
+                        if c != ' ' {
+                            break;
+                        }
+                        ind += 1;
+                    }
+                    if self.list_indentation == -1 {
+                        v.push(create_list(r));
+                        self.list_indentation = ind;
+                        return;
+                    }
+                    if let Some(mut el) = v.last_mut() {
+                        if let OrgElement::List {
+                            list_type: _,
+                            indentation,
+                            items,
+                        } = el
+                        {
+                            add_to_list(items, self.list_indentation, child);
+                        } else {
+                            v.push(create_list(r))
+                        }
+                    } else {
+                        v.push(create_list(r))
+                    }
+                    self.list_indentation = ind;
+                }
+                OrgElement::Paragraph { childs } => {
+                    if self.list_indentation == -1 {
+                        v.push(child);
+                        return;
+                    }
+                    let mut ind = 0i8;
+                    if let OrgElement::Text(s) = &childs[0] {
+                        for c in s.chars() {
+                            if c != ' ' {
+                                break;
+                            }
+                            ind += 1;
+                        }
+                    }
+
+                    if ind >= self.list_indentation + 1 {
+                        if let Some(mut el) = v.last_mut() {
+                            let mut last_el = el;
+                            loop {
+                                if let OrgElement::List {
+                                    list_type: _,
+                                    indentation,
+                                    items,
+                                } = last_el
+                                {
+                                    if let OrgElement::List {
+                                        list_type: _,
+                                        indentation: _,
+                                        items: _,
+                                    } = items.last().unwrap()
+                                    {
+                                        last_el = items.last_mut().unwrap();
+                                        continue;
+                                    }
+                                    items.push(child);
+                                    return;
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    v.push(child);
+                    // println!("ss {:#?}", &self);
+                }
                 _ => v.push(child),
+            }
+        }
+    }
+}
+fn add_to_list(it: &mut Vec<OrgElement>, ind: i8, c: OrgElement) {
+    let mut item_ind = 0i8;
+
+    if let OrgElement::ListItem(_, r) = &c {
+        for c in r.chars() {
+            if c != ' ' {
+                break;
+            }
+            item_ind += 1;
+        }
+    }
+
+    if let OrgElement::List {
+        list_type: _,
+        indentation,
+        items,
+    } = it.last_mut().unwrap()
+    {
+        if item_ind < *indentation {
+            it.push(c);
+        } else {
+            add_to_list(items, *indentation, c);
+        }
+    } else {
+        if item_ind <= ind {
+            it.push(c);
+        } else {
+            if let OrgElement::ListItem(_, r) = c {
+                it.push(create_list(&r))
             }
         }
     }
@@ -386,24 +540,24 @@ impl OrgParser {
                 doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
                 doc.add_child(create_keyword(c.as_str()));
             }
-            // match cap.name("list") {
-            //     Some(k) => println!(
-            //         "group name: list, val: {:?}, start: {}, end: {}",
-            //         &k.as_str(),
-            //         &k.start(),
-            //         &k.end()
-            //     ),
-            //     None => (),
-            // };
-            // match cap.name("table") {
-            //     Some(k) => println!(
-            //         "group name: table, val: {:?}, start: {}, end: {}",
-            //         &k.as_str(),
-            //         &k.start(),
-            //         &k.end()
-            //     ),
-            //     None => (),
-            // };
+            if let Some(c) = cap.name("list") {
+                doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
+                doc.add_child(create_list_item(c.as_str()));
+                // let mut nl = 0u8;
+                // for c in self.raw_str.get(c.end() - 1..).unwrap().chars() {
+                //     if c == '\n' {
+                //         nl += 1;
+                //         if nl >= 3 {
+                //             doc.list_indentation = 0;
+                //             break;
+                //         }
+                //         continue;
+                //     }
+                //     if c != ' ' {
+                //         break;
+                //     }
+                // }
+            }
         }
 
         doc.handle_undetect_str(self.raw_str.len(), self.raw_str.len(), &self.raw_str);
