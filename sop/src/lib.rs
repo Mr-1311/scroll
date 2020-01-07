@@ -309,17 +309,17 @@ fn generate_html_id(texts: &[OrgElement]) -> String {
 }
 
 #[derive(Debug)]
-pub struct OrgAST {
-    child: OrgElement,
+pub struct OrgDoc {
+    ast: OrgElement,
     last_element_index: usize,
     depth: u8,
     section_stack: Vec<u8>,
     list_indentation: i8,
 }
-impl OrgAST {
-    fn new() -> OrgAST {
-        OrgAST {
-            child: OrgElement::Section(Vec::new()),
+impl OrgDoc {
+    fn new() -> OrgDoc {
+        OrgDoc {
+            ast: OrgElement::Section(Vec::new()),
             last_element_index: 0,
             depth: 0,
             section_stack: Vec::new(),
@@ -374,7 +374,7 @@ impl OrgAST {
             _ => (),
         }
 
-        let mut s = &mut self.child;
+        let mut s = &mut self.ast;
 
         for _ in 0..self.depth {
             if let OrgElement::Section(v) = s {
@@ -442,7 +442,6 @@ impl OrgAST {
                         }
                     }
                     v.push(child);
-                    // println!("ss {:#?}", &self);
                 }
                 _ => v.push(child),
             }
@@ -492,8 +491,8 @@ impl OrgParser {
                 .expect("Something went wrong reading the file. Check path, permissions etc.."),
         )
     }
-    pub fn create_ast(&self) -> OrgAST {
-        let mut doc = OrgAST::new();
+    pub fn create_ast(&self) -> OrgDoc {
+        let mut doc = OrgDoc::new();
 
         for cap in REGEX_ALL.captures_iter(&self.raw_str) {
             if let Some(c) = cap.name("headline") {
@@ -515,7 +514,7 @@ impl OrgParser {
         doc
     }
     pub fn create_html(&self) -> String {
-        OrgParser::generate_html(&self.create_ast().child)
+        OrgParser::generate_html(&self.create_ast().ast)
     }
 
     fn generate_html(section: &OrgElement) -> String {
