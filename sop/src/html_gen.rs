@@ -1,4 +1,4 @@
-use crate::ast_gen::{LinkType, ListType, OrgElement};
+use crate::ast_gen::{BlockType, LinkType, ListType, OrgElement};
 
 pub fn generate_html_for_text(t: &[OrgElement]) -> String {
     let mut out = String::new();
@@ -42,6 +42,15 @@ pub fn generate_html_for_headline(level: u8, id: &str, title: &[OrgElement]) -> 
         generate_html_for_text(title),
         l = if level > 6 { &6u8 } else { &level }
     )
+}
+
+pub fn generate_html_for_block(block_type: &BlockType, value: &String) -> String {
+    match block_type {
+        BlockType::SRC => format!("<pre><code>{}</code></pre>", value),
+        BlockType::QUOTE => format!("<blockquote>{}</blockquote>", value),
+        BlockType::HTML => format!("{}", value),
+        BlockType::UNDEFINED => format!("<pre>{}</pre>", value),
+    }
 }
 
 pub fn generate_html_for_paragraph(el: &[OrgElement]) -> String {

@@ -32,6 +32,10 @@ impl OrgParser {
                 doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
                 doc.add_child(ast_gen::create_list_item(c.as_str()));
             }
+            if let Some(c) = cap.name("block") {
+                doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
+                doc.add_child(ast_gen::create_block(c.as_str()));
+            }
         }
 
         doc.handle_undetect_str(self.raw_str.len(), self.raw_str.len(), &self.raw_str);
@@ -51,12 +55,16 @@ impl OrgParser {
                     OrgElement::Headline { level, id, title } => {
                         out_html.push_str(&generate_html_for_headline(*level, id, title));
                     }
+                    OrgElement::Block {
+                        block_type, value, ..
+                    } => {
+                        out_html.push_str(&generate_html_for_block(block_type, value));
+                    }
                     OrgElement::List {
                         list_type, items, ..
                     } => {
                         out_html.push_str(&generate_html_for_list(list_type, items));
                     }
-
                     OrgElement::Paragraph { childs } => {
                         out_html.push_str(&generate_html_for_paragraph(childs));
                     }

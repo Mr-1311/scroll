@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use crate::html_gen::*;
 lazy_static! {
     pub static ref REGEX_ALL: Regex = Regex::new(
-        r"(?m)(?P<headline>^\*+ .*\n?)|(?P<list>^[ \t]*(?:-|\+|[ \t]+\*|\d+\.|\d+\)) .*\n?)|(?P<keyword>^[ \t]*#\+.*:.*\n)|(?P<table>^ *\|.*\n)"
+        r"(?m)(?P<headline>^\*+ .*\n?)|(?P<list>^[ \t]*(?:-|\+|[ \t]+\*|\d+\.|\d+\)) .*\n?)|(?P<keyword>^[ \t]*#\+.*:.*\n)|(?P<table>^ *\|.*\n)|(?P<block>#\+(?i)begin(?-i)_.+\n(?:.*\n)*?\s*#\+(?i)end(?-i)_.+)"
     ).unwrap();
     static ref REGEX_TEXT: Regex = Regex::new(
         r"(?m)(?P<bold>\*\w+(?:\s+\w+)*\*)|(?P<italic>/\w+(?:\s+\w+)*/)|(?P<code>~\w+(?:\s+\w+)*~)|(?P<underline>_\w+(?:\s+\w+)*_)|(?P<strike>\+\w+(?:\s+\w+)*\+)|(?P<link>\[\[.+?\]\])"
@@ -23,6 +23,12 @@ pub enum OrgElement {
         level: u8,
         id: String,
         title: Vec<OrgElement>,
+    },
+    Block {
+        block_type: BlockType,
+        params: String,
+        value: String,
+        style: String,
     },
     List {
         list_type: ListType,
@@ -48,6 +54,13 @@ pub enum OrgElement {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum BlockType {
+    SRC,
+    HTML,
+    QUOTE,
+    UNDEFINED,
+}
+#[derive(Debug, PartialEq)]
 pub enum LinkType {
     A,
     IMG,
@@ -57,6 +70,7 @@ pub enum ListType {
     ORDERED,
     UNORDERED,
 }
+
 pub fn create_headline(raw_value: &str) -> OrgElement {
     let mut level: u8 = 0;
     for c in raw_value.chars() {
@@ -97,6 +111,35 @@ pub fn create_keyword(raw_value: &str) -> OrgElement {
     OrgElement::Keyword {
         key: key.trim().to_uppercase(),
         value: val.trim().to_string(),
+    }
+}
+pub fn create_block(raw_value: &str) -> OrgElement {
+    let mut block_type = BlockType::UNDEFINED;
+    let fel = raw_value.find('\n').unwrap();
+    let lel = raw_value.rfind('\n').unwrap();
+    let mut sep = fel;
+    if let Some(v) = raw_value.find(' ') {
+        if v < fel {
+            sep = v
+        }
+    }
+    let t = raw_value.get(8..sep).unwrap().to_lowercase();
+    let params = raw_value.get(sep..fel).unwrap().to_string();
+    let value = raw_value.get(fel..lel).unwrap().to_string();
+
+    if t == "src" {
+        block_type = BlockType::SRC;
+    } else if t == "html" {
+        block_type = BlockType::HTML;
+    } else if t == "quote" {
+        block_type = BlockType::QUOTE;
+    }
+
+    OrgElement::Block {
+        block_type,
+        params,
+        value,
+        style: String::new(),
     }
 }
 pub fn create_paragraph(raw_value: String) -> OrgElement {
