@@ -278,6 +278,12 @@ pub struct OrgDoc {
     section_stack: Vec<u8>,
     list_indentation: i8,
 }
+impl Default for OrgDoc {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OrgDoc {
     pub fn new() -> OrgDoc {
         OrgDoc {

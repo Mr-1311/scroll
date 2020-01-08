@@ -34,6 +34,16 @@ pub fn generate_html_for_text(t: &[OrgElement]) -> String {
     }
     out
 }
+
+pub fn generate_html_for_headline(level: u8, id: &str, title: &[OrgElement]) -> String {
+    format!(
+        "<h{l} id=\"{}\">{}</h{l}>\n",
+        id,
+        generate_html_for_text(title),
+        l = if level > 6 { &6u8 } else { &level }
+    )
+}
+
 pub fn generate_html_for_paragraph(el: &[OrgElement]) -> String {
     format!("<p>{}</p>\n", generate_html_for_text(el))
 }

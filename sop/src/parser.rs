@@ -49,12 +49,7 @@ impl OrgParser {
             for el in v {
                 match el {
                     OrgElement::Headline { level, id, title } => {
-                        out_html.push_str(&format!(
-                            "<h{l} id=\"{}\">{}</h{l}>\n",
-                            id,
-                            generate_html_for_text(title),
-                            l = if *level > 6 { &6u8 } else { level }
-                        ));
+                        out_html.push_str(&generate_html_for_headline(*level, id, title));
                     }
                     OrgElement::List {
                         list_type, items, ..
