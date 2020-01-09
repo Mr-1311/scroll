@@ -57,7 +57,7 @@ pub fn generate_html_for_headline(
 pub fn generate_html_for_block(
     block_type: &BlockType,
     value: &str,
-    params: &String,
+    params: &str,
     style: &Option<String>,
 ) -> String {
     match block_type {

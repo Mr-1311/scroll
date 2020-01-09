@@ -395,6 +395,9 @@ pub fn handle_section_style(begin: usize, raw_str: &str) -> Option<String> {
 pub struct OrgDoc {
     pub ast: OrgElement,
     styles: HashSet<String>,
+    title: String,
+    summary: String,
+    date: String,
     last_element_index: usize,
     depth: u8,
     section_stack: Vec<u8>,
@@ -414,6 +417,9 @@ impl OrgDoc {
                 style: None,
             },
             styles: HashSet::new(),
+            title: String::new(),
+            summary: String::new(),
+            date: String::new(),
             last_element_index: 0,
             depth: 0,
             section_stack: Vec::new(),
@@ -464,19 +470,15 @@ impl OrgDoc {
     }
 
     pub fn add_child(&mut self, child: OrgElement) {
-        #[allow(clippy::single_match)]
-        match child {
-            OrgElement::Headline { level, .. } => {
-                while let Some(s) = self.section_stack.last() {
-                    if *s >= level {
-                        self.depth -= 1;
-                        self.section_stack.pop();
-                    } else {
-                        break;
-                    }
+        if let OrgElement::Headline { level, .. } = child {
+            while let Some(s) = self.section_stack.last() {
+                if *s >= level {
+                    self.depth -= 1;
+                    self.section_stack.pop();
+                } else {
+                    break;
                 }
             }
-            _ => (),
         }
 
         let mut s = &mut self.ast;
@@ -564,6 +566,12 @@ impl OrgDoc {
                         for val in value.split_whitespace() {
                             self.styles.insert(val.to_string());
                         }
+                    } else if key == "TITLE" {
+                        self.title = value.to_string();
+                    } else if key == "DATE" {
+                        self.date = value.to_string();
+                    } else if key == "SUMMARY" {
+                        self.summary = value.to_string();
                     }
                     v.push(child);
                 }
