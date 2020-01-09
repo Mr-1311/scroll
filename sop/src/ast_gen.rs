@@ -15,20 +15,27 @@ lazy_static! {
 
 #[derive(Debug)]
 pub enum OrgElement {
-    Section(Vec<OrgElement>),
+    Section {
+        childs: Vec<OrgElement>,
+        style: Option<String>,
+    },
     Paragraph {
         childs: Vec<OrgElement>,
+        style: Option<String>,
     },
     Headline {
         level: u8,
         id: String,
         title: Vec<OrgElement>,
+        is_section: bool,
+        style: Option<String>,
+        section_style: Option<String>,
     },
     Block {
         block_type: BlockType,
         params: String,
         value: String,
-        style: String,
+        style: Option<String>,
     },
     List {
         list_type: ListType,
@@ -71,7 +78,11 @@ pub enum ListType {
     UNORDERED,
 }
 
-pub fn create_headline(raw_value: &str) -> OrgElement {
+pub fn create_headline(
+    raw_value: &str,
+    style: Option<String>,
+    section_style: Option<String>,
+) -> OrgElement {
     let mut level: u8 = 0;
     for c in raw_value.chars() {
         if c == '*' {
@@ -81,14 +92,33 @@ pub fn create_headline(raw_value: &str) -> OrgElement {
         break;
     }
 
+    let mut section_style = section_style;
+    let mut is_section = false;
     let mut title = Vec::new();
     if let Some(t) = raw_value.get((level + 1) as usize..) {
-        title = handle_text(t.trim().to_owned());
+        if let Some(i) = t.to_lowercase().find("#+style:") {
+            if i == 0 {
+                is_section = true;
+                section_style = Some(
+                    t.get(t.find(':').unwrap() + 1..)
+                        .unwrap()
+                        .trim()
+                        .to_string(),
+                );
+            } else {
+                title = handle_text(t.trim().to_owned());
+            }
+        } else {
+            title = handle_text(t.trim().to_owned());
+        }
     }
     OrgElement::Headline {
         level,
         id: generate_html_id(&title),
         title,
+        is_section,
+        style,
+        section_style,
     }
 }
 
@@ -113,7 +143,7 @@ pub fn create_keyword(raw_value: &str) -> OrgElement {
         value: val.trim().to_string(),
     }
 }
-pub fn create_block(raw_value: &str) -> OrgElement {
+pub fn create_block(raw_value: &str, style: Option<String>) -> OrgElement {
     let mut block_type = BlockType::UNDEFINED;
     let fel = raw_value.find('\n').unwrap();
     let lel = raw_value.rfind('\n').unwrap();
@@ -139,12 +169,13 @@ pub fn create_block(raw_value: &str) -> OrgElement {
         block_type,
         params,
         value,
-        style: String::new(),
+        style,
     }
 }
-pub fn create_paragraph(raw_value: String) -> OrgElement {
+pub fn create_paragraph(raw_value: String, style: Option<String>) -> OrgElement {
     OrgElement::Paragraph {
         childs: handle_text(raw_value),
+        style,
     }
 }
 pub fn create_link(raw_value: &str) -> OrgElement {
@@ -313,6 +344,44 @@ pub fn handle_text(raw_value: String) -> Vec<OrgElement> {
     texts
 }
 
+pub fn handle_style(begin: usize, raw_str: &str) -> Option<String> {
+    if begin > 1 {
+        if let Some(s) = raw_str.get(..begin - 1) {
+            if let Some(i) = s.rfind('\n') {
+                let style = s.get(i..).unwrap();
+                if style.to_lowercase().contains("#+style:") {
+                    return Some(
+                        style
+                            .get(style.find(':').unwrap() + 1..)
+                            .unwrap()
+                            .trim()
+                            .to_string(),
+                    );
+                }
+            }
+        }
+    }
+    None
+}
+
+pub fn handle_section_style(begin: usize, raw_str: &str) -> Option<String> {
+    if let Some(s) = raw_str.get(begin..) {
+        if let Some(i) = s.find('\n') {
+            let style = s.get(..i).unwrap();
+            if style.to_lowercase().contains("#+style:") {
+                return Some(
+                    style
+                        .get(style.find(':').unwrap() + 1..)
+                        .unwrap()
+                        .trim()
+                        .to_string(),
+                );
+            }
+        }
+    }
+    None
+}
+
 #[derive(Debug)]
 pub struct OrgDoc {
     pub ast: OrgElement,
@@ -330,7 +399,10 @@ impl Default for OrgDoc {
 impl OrgDoc {
     pub fn new() -> OrgDoc {
         OrgDoc {
-            ast: OrgElement::Section(Vec::new()),
+            ast: OrgElement::Section {
+                childs: Vec::new(),
+                style: None,
+            },
             last_element_index: 0,
             depth: 0,
             section_stack: Vec::new(),
@@ -339,7 +411,9 @@ impl OrgDoc {
     }
     pub fn handle_undetect_str(&mut self, start: usize, end: usize, raw_str: &str) {
         let mut cur_parag = String::new();
+        let mut style = handle_style(self.last_element_index, raw_str);
         let mut em_lns = 0u8;
+
         if let Some(s) = raw_str.get(self.last_element_index..start) {
             for line in s.lines() {
                 if line == "" {
@@ -351,8 +425,12 @@ impl OrgDoc {
                     if !cur_parag.is_empty() {
                         cur_parag.pop();
 
-                        self.add_child(create_paragraph(cur_parag.clone()));
+                        self.add_child(create_paragraph(cur_parag.clone(), style.clone()));
+
                         cur_parag.clear();
+                        if style != None {
+                            style = None;
+                        }
                         continue;
                     }
                 }
@@ -364,7 +442,7 @@ impl OrgDoc {
         }
         if !cur_parag.is_empty() {
             cur_parag.pop();
-            self.add_child(create_paragraph(cur_parag));
+            self.add_child(create_paragraph(cur_parag, style));
         }
         self.last_element_index = end;
     }
@@ -388,17 +466,28 @@ impl OrgDoc {
         let mut s = &mut self.ast;
 
         for _ in 0..self.depth {
-            if let OrgElement::Section(v) = s {
-                s = v.last_mut().unwrap();
+            if let OrgElement::Section { childs, .. } = s {
+                s = childs.last_mut().unwrap();
             }
         }
-        if let OrgElement::Section(v) = s {
+        if let OrgElement::Section { childs: v, .. } = s {
             match &child {
-                OrgElement::Headline { level, .. } => {
+                OrgElement::Headline {
+                    level,
+                    section_style,
+                    is_section,
+                    ..
+                } => {
+                    let s_style = section_style.clone();
                     self.section_stack.push(*level);
                     self.depth += 1;
-                    v.push(child);
-                    v.push(OrgElement::Section(Vec::new()));
+                    if !is_section {
+                        v.push(child);
+                    }
+                    v.push(OrgElement::Section {
+                        childs: Vec::new(),
+                        style: s_style,
+                    });
                 }
                 OrgElement::ListItem(_, r) => {
                     let mut ind = 0i8;
@@ -424,7 +513,7 @@ impl OrgDoc {
                     }
                     self.list_indentation = ind;
                 }
-                OrgElement::Paragraph { childs } => {
+                OrgElement::Paragraph { childs, .. } => {
                     if self.list_indentation == -1 {
                         v.push(child);
                         return;

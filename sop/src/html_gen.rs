@@ -35,9 +35,19 @@ pub fn generate_html_for_text(t: &[OrgElement]) -> String {
     out
 }
 
-pub fn generate_html_for_headline(level: u8, id: &str, title: &[OrgElement]) -> String {
+pub fn generate_html_for_headline(
+    level: u8,
+    id: &str,
+    title: &[OrgElement],
+    style: &Option<String>,
+) -> String {
     format!(
-        "<h{l} id=\"{}\">{}</h{l}>\n",
+        "<h{l} {} id=\"{}\">{}</h{l}>\n",
+        if let Some(s) = style {
+            format!("class=\"{}\"", s)
+        } else {
+            "".to_string()
+        },
         id,
         generate_html_for_text(title),
         l = if level > 6 { &6u8 } else { &level }
@@ -53,8 +63,16 @@ pub fn generate_html_for_block(block_type: &BlockType, value: &String) -> String
     }
 }
 
-pub fn generate_html_for_paragraph(el: &[OrgElement]) -> String {
-    format!("<p>{}</p>\n", generate_html_for_text(el))
+pub fn generate_html_for_paragraph(el: &[OrgElement], style: &Option<String>) -> String {
+    format!(
+        "<p {}>{}</p>\n",
+        if let Some(s) = style {
+            format!("class=\"{}\"", s)
+        } else {
+            "".to_string()
+        },
+        generate_html_for_text(el)
+    )
 }
 
 pub fn generate_html_for_list(t: &ListType, els: &[OrgElement]) -> String {
@@ -69,10 +87,10 @@ pub fn generate_html_for_list(t: &ListType, els: &[OrgElement]) -> String {
             OrgElement::ListItem(childs, _) => {
                 list_content.push_str(&generate_html_for_list_item(childs));
             }
-            OrgElement::Paragraph { childs } => {
-                list_content.push_str(&generate_html_for_paragraph(childs));
+            OrgElement::Paragraph { childs, style } => {
+                list_content.push_str(&generate_html_for_paragraph(childs, style));
             }
-            _ => println!("This type can not add to List: {:#?}", e),
+            _ => (),
         }
     }
 

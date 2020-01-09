@@ -1,5 +1,8 @@
 use crate::html_gen::*;
-use crate::{ast_gen, ast_gen::OrgDoc, ast_gen::OrgElement};
+use crate::{
+    ast_gen, ast_gen::handle_section_style, ast_gen::handle_style, ast_gen::OrgDoc,
+    ast_gen::OrgElement,
+};
 
 #[derive(Debug)]
 pub struct OrgParser {
@@ -22,7 +25,11 @@ impl OrgParser {
         for cap in ast_gen::REGEX_ALL.captures_iter(&self.raw_str) {
             if let Some(c) = cap.name("headline") {
                 doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
-                doc.add_child(ast_gen::create_headline(c.as_str()));
+                doc.add_child(ast_gen::create_headline(
+                    c.as_str(),
+                    handle_style(c.start(), &self.raw_str),
+                    handle_section_style(c.end(), &self.raw_str),
+                ));
             }
             if let Some(c) = cap.name("keyword") {
                 doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
@@ -34,7 +41,10 @@ impl OrgParser {
             }
             if let Some(c) = cap.name("block") {
                 doc.handle_undetect_str(c.start(), c.end(), &self.raw_str);
-                doc.add_child(ast_gen::create_block(c.as_str()));
+                doc.add_child(ast_gen::create_block(
+                    c.as_str(),
+                    handle_style(c.start(), &self.raw_str),
+                ));
             }
         }
 
@@ -49,11 +59,17 @@ impl OrgParser {
     fn generate_html(section: &OrgElement) -> String {
         let mut out_html = String::new();
 
-        if let OrgElement::Section(v) = section {
-            for el in v {
+        if let OrgElement::Section { childs, .. } = section {
+            for el in childs {
                 match el {
-                    OrgElement::Headline { level, id, title } => {
-                        out_html.push_str(&generate_html_for_headline(*level, id, title));
+                    OrgElement::Headline {
+                        level,
+                        id,
+                        title,
+                        style,
+                        ..
+                    } => {
+                        out_html.push_str(&generate_html_for_headline(*level, id, title, style));
                     }
                     OrgElement::Block {
                         block_type, value, ..
@@ -65,12 +81,19 @@ impl OrgParser {
                     } => {
                         out_html.push_str(&generate_html_for_list(list_type, items));
                     }
-                    OrgElement::Paragraph { childs } => {
-                        out_html.push_str(&generate_html_for_paragraph(childs));
+                    OrgElement::Paragraph { childs, style } => {
+                        out_html.push_str(&generate_html_for_paragraph(childs, style));
                     }
-                    OrgElement::Section(_) => {
-                        out_html
-                            .push_str(&format!("<div>\n{}</div>\n", OrgParser::generate_html(el)));
+                    OrgElement::Section { style, .. } => {
+                        out_html.push_str(&format!(
+                            "<div {}>\n{}</div>\n",
+                            if let Some(s) = style {
+                                format!("class=\"{}\"", s)
+                            } else {
+                                "".to_string()
+                            },
+                            OrgParser::generate_html(el)
+                        ));
                     }
                     _ => (),
                 }
