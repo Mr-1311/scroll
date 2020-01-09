@@ -54,11 +54,11 @@ pub fn generate_html_for_headline(
     )
 }
 
-pub fn generate_html_for_block(block_type: &BlockType, value: &String) -> String {
+pub fn generate_html_for_block(block_type: &BlockType, value: &str) -> String {
     match block_type {
         BlockType::SRC => format!("<pre><code>{}</code></pre>", value),
         BlockType::QUOTE => format!("<blockquote>{}</blockquote>", value),
-        BlockType::HTML => format!("{}", value),
+        BlockType::HTML => value.to_string(),
         BlockType::UNDEFINED => format!("<pre>{}</pre>", value),
     }
 }
