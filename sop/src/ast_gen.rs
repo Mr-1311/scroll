@@ -358,6 +358,17 @@ pub fn handle_style(begin: usize, raw_str: &str) -> Option<String> {
                             .to_string(),
                     );
                 }
+            } else {
+                if let Some(i) = s.to_lowercase().find("#+style:") {
+                    if i == 0 {
+                        return Some(
+                            s.get(s.find(':').unwrap() + 1..)
+                                .unwrap()
+                                .trim()
+                                .to_string(),
+                        );
+                    }
+                }
             }
         }
     }
@@ -411,8 +422,12 @@ impl OrgDoc {
     }
     pub fn handle_undetect_str(&mut self, start: usize, end: usize, raw_str: &str) {
         let mut cur_parag = String::new();
-        let mut style = handle_style(self.last_element_index, raw_str);
         let mut em_lns = 0u8;
+
+        let mut style = None;
+        if self.last_element_index > 0 {
+            style = handle_style(self.last_element_index - 1, raw_str);
+        }
 
         if let Some(s) = raw_str.get(self.last_element_index..start) {
             for line in s.lines() {
