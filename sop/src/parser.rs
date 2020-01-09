@@ -72,9 +72,13 @@ impl OrgParser {
                         out_html.push_str(&generate_html_for_headline(*level, id, title, style));
                     }
                     OrgElement::Block {
-                        block_type, value, ..
+                        block_type,
+                        value,
+                        params,
+                        style,
                     } => {
-                        out_html.push_str(&generate_html_for_block(block_type, value));
+                        out_html
+                            .push_str(&generate_html_for_block(block_type, value, params, style));
                     }
                     OrgElement::List {
                         list_type, items, ..

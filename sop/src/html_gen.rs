@@ -42,9 +42,9 @@ pub fn generate_html_for_headline(
     style: &Option<String>,
 ) -> String {
     format!(
-        "<h{l} {} id=\"{}\">{}</h{l}>\n",
+        "<h{l}{} id=\"{}\">{}</h{l}>\n",
         if let Some(s) = style {
-            format!("class=\"{}\"", s)
+            format!(" class=\"{}\"", s)
         } else {
             "".to_string()
         },
@@ -54,20 +54,49 @@ pub fn generate_html_for_headline(
     )
 }
 
-pub fn generate_html_for_block(block_type: &BlockType, value: &str) -> String {
+pub fn generate_html_for_block(
+    block_type: &BlockType,
+    value: &str,
+    params: &String,
+    style: &Option<String>,
+) -> String {
     match block_type {
-        BlockType::SRC => format!("<pre><code>{}</code></pre>", value),
-        BlockType::QUOTE => format!("<blockquote>{}</blockquote>", value),
+        BlockType::SRC => format!(
+            "<pre><code{}>{}</code></pre>\n",
+            if let Some(s) = style {
+                format!(" class=\"{} {}\"", params, s)
+            } else {
+                format!(" class=\"{}\"", params)
+            },
+            value
+        ),
+        BlockType::QUOTE => format!(
+            "<blockquote{}>{}</blockquote>\n",
+            if let Some(s) = style {
+                format!(" class=\"{}\"", s)
+            } else {
+                "".to_string()
+            },
+            value
+        ),
         BlockType::HTML => value.to_string(),
-        BlockType::UNDEFINED => format!("<pre>{}</pre>", value),
+        BlockType::UNDEFINED => format!(
+            "<pre{}>{}</pre>\n",
+            if let Some(s) = style {
+                format!(" class=\"{}\"", s)
+            } else {
+                "".to_string()
+            },
+            value
+        ),
     }
 }
 
 pub fn generate_html_for_paragraph(el: &[OrgElement], style: &Option<String>) -> String {
     format!(
-        "<p {}>{}</p>\n",
+        "<p{}>{}</p>\n",
         if let Some(s) = style {
-            format!("class=\"{}\"", s)
+            format!(" class=\"{}\"", s)
         } else {
             "".to_string()
         },

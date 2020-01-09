@@ -394,6 +394,7 @@ pub fn handle_section_style(begin: usize, raw_str: &str) -> Option<String> {
 #[derive(Debug)]
 pub struct OrgDoc {
     pub ast: OrgElement,
+    styles: HashSet<String>,
     last_element_index: usize,
     depth: u8,
     section_stack: Vec<u8>,
@@ -412,6 +413,7 @@ impl OrgDoc {
                 childs: Vec::new(),
                 style: None,
             },
+            styles: HashSet::new(),
             last_element_index: 0,
             depth: 0,
             section_stack: Vec::new(),
@@ -423,7 +425,7 @@ impl OrgDoc {
         let mut em_lns = 0u8;
 
         let mut style = if self.last_element_index > 0 {
-            handle_style(self.last_element_index - 1, raw_str)
+            handle_style(self.last_element_index, raw_str)
         } else {
             None
         };
@@ -553,6 +555,14 @@ impl OrgDoc {
                                 items.push(child);
                                 return;
                             }
+                        }
+                    }
+                    v.push(child);
+                }
+                OrgElement::Keyword { key, value } => {
+                    if key == "STYLE" {
+                        for val in value.split_whitespace() {
+                            self.styles.insert(val.to_string());
                         }
                     }
                     v.push(child);
