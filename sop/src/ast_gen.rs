@@ -216,6 +216,16 @@ pub fn create_link(raw_value: &str) -> OrgElement {
             };
         }
     }
+    if let None = link.find("https://") {
+        if let None = link.find("http://") {
+            if let Some(i) = link.rfind(".org") {
+                if i == link.len() - 4 {
+                    link = link.get(..link.len() - 3).unwrap().to_string();
+                    link.push_str("html");
+                }
+            }
+        }
+    }
     OrgElement::Link {
         link_type: LinkType::A,
         link,
