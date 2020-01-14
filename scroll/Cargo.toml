@@ -11,3 +11,4 @@ edition = "2018"
 sop = { path = "../sop" }
 ste = { path = "../ste" }
 clap = "2.33.0"
+walkdir = "2.3.1"

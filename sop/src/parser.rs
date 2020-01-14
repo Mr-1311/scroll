@@ -13,7 +13,7 @@ impl OrgParser {
     pub fn create_from_str(raw_str: String) -> OrgParser {
         OrgParser { raw_str }
     }
-    pub fn create_from_path(path: String) -> OrgParser {
+    pub fn create_from_path(path: &std::path::Path) -> OrgParser {
         OrgParser::create_from_str(
             std::fs::read_to_string(path)
                 .expect("Something went wrong reading the file. Check path, permissions etc.."),
