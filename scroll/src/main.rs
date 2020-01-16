@@ -1,4 +1,6 @@
 extern crate clap;
+#[macro_use]
+extern crate lazy_static;
 extern crate walkdir;
 
 use sop::parser::OrgParser;
@@ -8,6 +10,12 @@ use std::{fs, fs::File};
 
 use clap::{App, Arg};
 use walkdir::{DirEntry, WalkDir};
+
+mod defaults;
+
+lazy_static! {
+    static ref BLACK_LIST: Vec<&'static str> = vec!["templates", "styles", "site", "scroll.toml"];
+}
 
 fn main() {
     let matches = App::new("Scroll")
@@ -33,20 +41,13 @@ fn main() {
 }
 
 fn build() {
-    fn is_bl(entry: &DirEntry) -> bool {
-        let black_list = vec!["templates", "styles", "scroll.toml"];
-        println!("aa {}", entry.file_name().to_str().unwrap());
-        entry
-            .file_name()
-            .to_str()
-            .map(|s| {
-                if s == "." {
-                    return false;
-                } else {
-                    black_list.contains(&s) || s.starts_with(".")
-                }
-            })
-            .unwrap_or(false)
+    if !fs::metadata("./scroll.toml").is_ok() {
+        println!("No config file detected!\n scroll.toml file is required in scroll project root for site generation.");
+        return;
+    }
+    match fs::remove_dir_all("./site") {
+        Err(_) => (), //println!("Error while tring to delete old site. Error: {}", e),
+        Ok(_) => (),  //println!("Older site deleted!"),
     }
 
     for entry in WalkDir::new(".").into_iter().filter_entry(|e| !is_bl(e)) {
@@ -57,6 +58,21 @@ fn build() {
                 copy_file_to_site(e.path());
             }
         }
+    }
+
+    fn is_bl(entry: &DirEntry) -> bool {
+        println!("aa {}", entry.file_name().to_str().unwrap());
+        entry
+            .file_name()
+            .to_str()
+            .map(|s| {
+                if s == "." {
+                    return false;
+                } else {
+                    BLACK_LIST.contains(&s) || s.starts_with(".")
+                }
+            })
+            .unwrap_or(false)
     }
 
     fn handle_site_path(path: &std::path::Path, is_org: bool) -> Option<String> {
@@ -104,6 +120,34 @@ fn build() {
 fn new(name: &str) {
     match std::fs::create_dir(name) {
         Err(err) => println!("Error while creating new folder. Error: {}", err),
-        _ => (),
+        Ok(_) => {
+            match create_file_w_content(name, "scroll.toml", &defaults::CONF) {
+                Err(err) => println!("Error while createing config file. Error: {}", err),
+                Ok(_) => (),
+            }
+
+            match create_new_dir(name, "templates") {
+                Err(err) => println!("Error while creating templates folder. Error: {}", err),
+                Ok(path) => {
+                    match create_file_w_content(&path, "default_template.html", &defaults::TEMPLATE)
+                    {
+                        Err(e) => println!("Error while creating default template. Error: {}", e),
+                        Ok(_) => (),
+                    }
+                }
+            }
+        }
+    }
+
+    fn create_file_w_content(dir: &str, name: &str, content: &str) -> std::io::Result<()> {
+        let path = format!("{}/{}", dir, name);
+        fs::File::create(path)?.write_all(content.as_bytes())?;
+        Ok(())
+    }
+
+    fn create_new_dir(root: &str, name: &str) -> std::io::Result<(String)> {
+        let path = format!("{}/{}", root, name);
+        fs::create_dir(&path)?;
+        Ok(path)
     }
 }
