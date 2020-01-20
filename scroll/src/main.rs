@@ -180,6 +180,19 @@ fn new(name: &str) {
                     }
                 }
             }
+            match create_new_dir(name, "styles") {
+                Err(err) => println!("Error while creating styles folder. Error: {}", err),
+                Ok(path) => {
+                    match create_file_w_content(&path, "style_config.toml", &defaults::CSS_DEFAULT)
+                    {
+                        Err(e) => println!(
+                            "Error while creating default style_config.toml file. Error: {}",
+                            e
+                        ),
+                        Ok(_) => (),
+                    }
+                }
+            }
         }
     }
 
