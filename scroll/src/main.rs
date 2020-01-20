@@ -1,20 +1,41 @@
-extern crate clap;
 #[macro_use]
 extern crate lazy_static;
-extern crate walkdir;
 
+use sop::ast_gen::OrgDoc;
 use sop::parser::OrgParser;
 
 use std::io::prelude::*;
 use std::{fs, fs::File};
 
 use clap::{App, Arg};
+use tinytemplate::TinyTemplate;
 use walkdir::{DirEntry, WalkDir};
 
+use serde::Serialize;
+
+use std::collections::hash_set::HashSet;
+mod css_gen;
 mod defaults;
 
 lazy_static! {
     static ref BLACK_LIST: Vec<&'static str> = vec!["templates", "styles", "site", "scroll.toml"];
+    static ref SITE_STYLES: HashSet<String> = HashSet::new();
+}
+
+#[derive(Serialize)]
+struct Page {
+    title: String,
+    summary: String,
+    date: String,
+}
+impl Page {
+    fn new(ast: OrgDoc) -> Page {
+        Page {
+            title: ast.title,
+            summary: ast.summary,
+            date: ast.date,
+        }
+    }
 }
 
 fn main() {
@@ -50,18 +71,26 @@ fn build() {
         Ok(_) => (),  //println!("Older site deleted!"),
     }
 
+    let mut site_styles: HashSet<String> = HashSet::new();
+
     for entry in WalkDir::new(".").into_iter().filter_entry(|e| !is_bl(e)) {
         if let Ok(e) = entry {
             if e.file_name().to_str().unwrap().ends_with(".org") {
-                create_html(e.path());
+                create_html(e.path(), &mut site_styles);
             } else {
                 copy_file_to_site(e.path());
             }
         }
     }
 
+    println!("site stylessss: {:?}", site_styles);
+    fs::create_dir("./site/style").unwrap();
+    File::create("./site/style/index.css")
+        .unwrap()
+        .write_all(css_gen::generate_site_styles(site_styles).as_bytes())
+        .unwrap();
+
     fn is_bl(entry: &DirEntry) -> bool {
-        println!("aa {}", entry.file_name().to_str().unwrap());
         entry
             .file_name()
             .to_str()
@@ -107,11 +136,26 @@ fn build() {
         }
     }
 
-    fn create_html(path: &std::path::Path) {
+    fn create_html(path: &std::path::Path, site_styles: &mut HashSet<String>) {
+        let ast = OrgParser::create_from_path(path).create_ast();
+
+        for style in &ast.styles {
+            site_styles.insert(style.to_string());
+        }
+
+        let page_template =
+            defaults::TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
+
+        let mut tt = TinyTemplate::new();
+        tt.add_template("tmp", &page_template).unwrap();
+
+        let page = Page::new(ast);
+        let rendered = tt.render("tmp", &page).unwrap();
+
         if let Some(p) = handle_site_path(path, true) {
             File::create(p)
                 .unwrap()
-                .write_all(OrgParser::create_from_path(path).create_html().as_bytes())
+                .write_all(rendered.as_bytes())
                 .unwrap();
         }
     }
