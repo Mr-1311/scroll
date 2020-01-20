@@ -1,11 +1,11 @@
-use crate::defaults::CSS_TEMP;
+use crate::defaults::CSS_DEFAULT;
 use serde::Deserialize;
 
 use std::collections::hash_map::HashMap;
 use std::collections::hash_set::HashSet;
 
 lazy_static! {
-    static ref CONFIG: Config = toml::from_str(&CSS_TEMP).unwrap();
+    static ref CONFIG: Config = toml::from_str(&CSS_DEFAULT).unwrap();
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,6 +72,9 @@ pub fn generate_site_styles(site_styles: HashSet<String>) -> String {
             }
         }
     }
+
+    let mut queries: HashMap<String, String> = HashMap::new();
+
     for (k, v) in all_css {
         match &k[..] {
             "all" => {
@@ -84,10 +87,20 @@ pub fn generate_site_styles(site_styles: HashSet<String>) -> String {
                 for value in v {
                     style_temp.push_str(&value);
                 }
-                style.push_str(&format!(
-                    "@media (min-width: {}) {{\n {}\n}}\n",
-                    k, style_temp
-                ));
+                queries.insert(
+                    k.clone(),
+                    format!("@media (min-width: {}) {{\n {}}}\n", k, style_temp),
+                );
+            }
+        }
+    }
+
+    if let Some(q_vec) = &CONFIG.responsive.query {
+        for q in q_vec {
+            for (k, v) in &queries {
+                if &q.min_width == k {
+                    style.push_str(v);
+                }
             }
         }
     }
