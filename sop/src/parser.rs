@@ -56,7 +56,7 @@ impl OrgParser {
         OrgParser::generate_html(&self.create_ast().ast)
     }
 
-    fn generate_html(section: &OrgElement) -> String {
+    pub fn generate_html(section: &OrgElement) -> String {
         let mut out_html = String::new();
 
         if let OrgElement::Section { childs, .. } = section {
