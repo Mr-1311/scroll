@@ -13,7 +13,7 @@ lazy_static! {
 {page}
 </body>
 </html> "#;
-    pub static ref CSS_TEMP: &'static str = r#"
+    pub static ref CSS_DEFAULT: &'static str = r#"
 [responsive]
 [[responsive.query]]
 name = "sm"
