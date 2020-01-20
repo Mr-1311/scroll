@@ -123,21 +123,9 @@ pub fn create_headline(
 }
 
 pub fn create_keyword(raw_value: &str) -> OrgElement {
-    let mut key = String::new();
-    let mut val = String::new();
+    let key = raw_value.get(2..raw_value.find(':').unwrap()).unwrap();
+    let val = raw_value.get(raw_value.find(':').unwrap() + 1..).unwrap();
 
-    let mut is_val = false;
-    for c in raw_value.get(2..).unwrap().chars() {
-        if c == ':' {
-            is_val = true;
-            continue;
-        }
-        if !is_val {
-            key.push(c);
-        } else {
-            val.push(c);
-        }
-    }
     OrgElement::Keyword {
         key: key.trim().to_uppercase(),
         value: val.trim().to_string(),
@@ -404,10 +392,10 @@ pub fn handle_section_style(begin: usize, raw_str: &str) -> Option<String> {
 #[derive(Debug)]
 pub struct OrgDoc {
     pub ast: OrgElement,
-    styles: HashSet<String>,
-    title: String,
-    summary: String,
-    date: String,
+    pub styles: HashSet<String>,
+    pub title: String,
+    pub summary: String,
+    pub date: String,
     last_element_index: usize,
     depth: u8,
     section_stack: Vec<u8>,
