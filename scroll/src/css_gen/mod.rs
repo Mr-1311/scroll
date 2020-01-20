@@ -5,7 +5,18 @@ use std::collections::hash_map::HashMap;
 use std::collections::hash_set::HashSet;
 
 lazy_static! {
-    static ref CONFIG: Config = toml::from_str(&CSS_DEFAULT).unwrap();
+    static ref CONFIG: Config = {
+        if let Ok(s) = std::fs::read_to_string("styles/style_config.toml") {
+            if let Ok(t) = toml::from_str(&s) {
+                return t;
+            }
+            println!("Error while parsing style_config.toml. Scroll will use default config.");
+        } else {
+            println!("Error while reading style_config.toml. Scroll will use default config.");
+        }
+
+        toml::from_str(&CSS_DEFAULT).unwrap()
+    };
 }
 
 #[derive(Debug, Deserialize)]
