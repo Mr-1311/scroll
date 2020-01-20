@@ -301,6 +301,17 @@ fn handle_color_value(arg: &str) -> Option<String> {
             }
             Err(e) => println!("Error while parsing color. Color: {}. Error: {}", color, e),
         }
+        if let Some(c) = &new_color {
+            let dif = 6 - c.len();
+            if dif > 0 {
+                let mut new_c = String::new();
+                for _ in 0..dif {
+                    new_c.push('0');
+                }
+                new_c.push_str(&c);
+                new_color = Some(new_c);
+            }
+        }
         new_color
     }
     fn lerp(from: i64, to: i64, t: f32) -> i64 {
