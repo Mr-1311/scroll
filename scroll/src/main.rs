@@ -11,7 +11,7 @@ use clap::{App, Arg};
 use tinytemplate::TinyTemplate;
 use walkdir::{DirEntry, WalkDir};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use std::collections::hash_set::HashSet;
 mod css_gen;
@@ -20,6 +20,37 @@ mod defaults;
 lazy_static! {
     static ref BLACK_LIST: Vec<&'static str> = vec!["templates", "styles", "site", "scroll.toml"];
     static ref SITE_STYLES: HashSet<String> = HashSet::new();
+    static ref SCROLL_CONFIG: ScrollConfig = {
+        if let Ok(s) = std::fs::read_to_string("scroll.toml") {
+            if let Ok(t) = toml::from_str(&s) {
+                return t;
+            }
+            println!("Error while parsing scroll.toml. Scroll will use default config.");
+        } else {
+            println!("Error while reading scroll.toml. Scroll will use default config.");
+        }
+
+        toml::from_str(&defaults::CONF).unwrap()
+    };
+    static ref TEMPLATE: String = {
+        if let Ok(s) =
+            std::fs::read_to_string(format!("templates/{}", SCROLL_CONFIG.default_template))
+        {
+            return s;
+        } else {
+            println!(
+                "Error while reading {}. Scroll will use default template.",
+                SCROLL_CONFIG.default_template
+            );
+        }
+
+        defaults::TEMPLATE.to_string()
+    };
+}
+
+#[derive(Debug, Deserialize)]
+struct ScrollConfig {
+    default_template: String,
 }
 
 #[derive(Serialize)]
@@ -56,7 +87,9 @@ fn main() {
         ("new", Some(new_matches)) => {
             new(new_matches.value_of("site_name").unwrap());
         }
-        ("", None) => println!("No subcommand was used"),
+        ("", None) => {
+            println!("No subcommand was used, 'scroll -h' or 'scroll --help' for more information.")
+        }
         _ => println!("unimplemented subcommend!"),
     }
 }
@@ -83,12 +116,10 @@ fn build() {
         }
     }
 
-    println!("site stylessss: {:?}", site_styles);
-    fs::create_dir("./site/style").unwrap();
-    File::create("./site/style/index.css")
-        .unwrap()
-        .write_all(css_gen::generate_site_styles(site_styles).as_bytes())
-        .unwrap();
+    if let Ok(mut f) = File::create("./site/scroll_style.css") {
+        f.write_all(css_gen::generate_site_styles(site_styles).as_bytes())
+            .unwrap();
+    }
 
     fn is_bl(entry: &DirEntry) -> bool {
         entry
@@ -125,14 +156,14 @@ fn build() {
             return None;
         }
 
-        fs::create_dir_all(new_path.get(..new_path.rfind("/").unwrap()).unwrap());
+        fs::create_dir_all(new_path.get(..new_path.rfind("/").unwrap()).unwrap()).unwrap();
 
         Some(new_path)
     }
 
     fn copy_file_to_site(path: &std::path::Path) {
         if let Some(p) = handle_site_path(path, false) {
-            fs::copy(path, p);
+            fs::copy(path, p).unwrap();
         }
     }
 
@@ -143,8 +174,7 @@ fn build() {
             site_styles.insert(style.to_string());
         }
 
-        let page_template =
-            defaults::TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
+        let page_template = TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
 
         let mut tt = TinyTemplate::new();
         tt.add_template("tmp", &page_template).unwrap();
