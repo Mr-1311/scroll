@@ -396,6 +396,7 @@ pub struct OrgDoc {
     pub title: String,
     pub summary: String,
     pub date: String,
+    pub template: Option<String>,
     last_element_index: usize,
     depth: u8,
     section_stack: Vec<u8>,
@@ -418,6 +419,7 @@ impl OrgDoc {
             title: String::new(),
             summary: String::new(),
             date: String::new(),
+            template: None,
             last_element_index: 0,
             depth: 0,
             section_stack: Vec::new(),
@@ -570,6 +572,8 @@ impl OrgDoc {
                         self.date = value.to_string();
                     } else if key == "SUMMARY" {
                         self.summary = value.to_string();
+                    } else if key == "TEMPLATE" {
+                        self.template = Some(value.to_string());
                     }
                     v.push(child);
                 }
