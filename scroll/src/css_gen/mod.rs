@@ -219,6 +219,13 @@ fn handle_prop_value(
                         break;
                     }
                 }
+                "number" => {
+                    if let Some(v) = handle_number_value(arg) {
+                        value.push_str(&v);
+                        value.push(' ');
+                        break;
+                    }
+                }
                 _ => (),
             }
         }
