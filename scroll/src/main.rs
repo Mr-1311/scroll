@@ -174,7 +174,21 @@ fn build() {
             site_styles.insert(style.to_string());
         }
 
-        let page_template = TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
+        let page_template: String;
+        if let Some(t) = &ast.template {
+            if let Ok(s) = std::fs::read_to_string(format!("templates/{}", t)) {
+                page_template = s.replace("{page}", &OrgParser::generate_html(&ast.ast));
+            } else {
+                println!(
+                    "Error while reading this template: {}, scroll will use default template",
+                    t
+                );
+                page_template = TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
+            }
+        } else {
+            page_template = TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
+        };
+        // let page_template = TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
 
         let mut tt = TinyTemplate::new();
         tt.add_template("tmp", &page_template).unwrap();
@@ -210,6 +224,7 @@ fn new(name: &str) {
                     }
                 }
             }
+
             match create_new_dir(name, "styles") {
                 Err(err) => println!("Error while creating styles folder. Error: {}", err),
                 Ok(path) => {
@@ -222,6 +237,11 @@ fn new(name: &str) {
                         Ok(_) => (),
                     }
                 }
+            }
+
+            match create_file_w_content(name, "theme.css", &defaults::THEME) {
+                Err(err) => println!("Error while createing theme file. Error: {}", err),
+                Ok(_) => (),
             }
         }
     }
