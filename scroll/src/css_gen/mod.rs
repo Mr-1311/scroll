@@ -121,7 +121,6 @@ pub fn generate_site_styles(site_styles: HashSet<String>) -> String {
 
 fn handle_css(class_name: &str) -> Option<(String, String)> {
     let mut key = String::from("all");
-    let mut value = String::new();
 
     let style = match parse_style(class_name) {
         Some(s) => s,
@@ -149,7 +148,7 @@ fn handle_css(class_name: &str) -> Option<(String, String)> {
         &prop.keyword_aliases,
         &prop.data_types,
     );
-    value = format!("{} {{\n {}: {}\n}}\n", c_name, prop_name, prop_value);
+    let value = format!("{} {{\n {}:{}\n}}\n", c_name, prop_name, prop_value);
 
     Some((key, value))
 }
@@ -334,20 +333,27 @@ fn handle_color_value(arg: &str) -> Option<String> {
 fn handle_length_value(arg: &str) -> Option<String> {
     let value: Option<String> = None;
     if let Some(s) = &CONFIG.lengths.default {
-        if let Ok(_) = arg.parse::<u64>() {
+        if let Ok(_) = arg.parse::<f64>() {
             return Some(format!("{}{}", arg, s));
         }
     }
     for unit in &CONFIG.lengths.units {
         if arg.ends_with(unit) {
             if let Some(t) = arg.get(..(arg.len() - unit.len())) {
-                if let Ok(_) = t.parse::<u64>() {
+                if let Ok(_) = t.parse::<f64>() {
                     return Some(arg.to_string());
                 }
             }
         }
     }
 
+    value
+}
+fn handle_number_value(arg: &str) -> Option<String> {
+    let value: Option<String> = None;
+    if let Ok(_) = arg.parse::<f64>() {
+        return Some(arg.to_string());
+    }
     value
 }
 
