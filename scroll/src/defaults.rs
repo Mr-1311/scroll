@@ -1,13 +1,13 @@
 lazy_static! {
     pub static ref CONF: &'static str = r#"
-    default_template = ""
+    default_template = "default_template.html"
 "#;
     pub static ref TEMPLATE: &'static str = r#"
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<link rel="stylesheet" type="text/css" href="/style/index.css">
+<link rel="stylesheet" type="text/css" href="/scroll_style.css">
 </head>
 <body>
 {page}
