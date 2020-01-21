@@ -22,62 +22,98 @@ lazy_static! {
 </html> "#;
     pub static ref CSS_DEFAULT: &'static str = r#"
 [responsive]
-[[responsive.query]]
-name = "sm"
-min_width = "640px"
+  [[responsive.query]]
+    name = "sm"
+    min_width = "640px"
 
-[[responsive.query]]
-name = "md"
-min_width = "768px"
+  [[responsive.query]]
+    name = "md"
+    min_width = "768px"
 
-[[responsive.query]]
-name = "lg"
-min_width = "1024px"
+  [[responsive.query]]
+    name = "lg"
+    min_width = "1024px"
 
-[[responsive.query]]
-name = "xl"
-min_width = "1280px"
+  [[responsive.query]]
+    name = "xl"
+    min_width = "1280px"
 
 [colors]
-range = 10
-transparency_range = 10
+  range = 10
+  transparency_range = 10
 
-[[colors.color]]
-color = "ff0000"
-color_alias = "red"
+  [[colors.color]]
+    color = "000000"
+    color_alias = "black"
 
-[[colors.color]]
-color = "00ff00"
-color_alias = "gre"
+  [[colors.color]]
+    color = "ffffff"
+    color_alias = "white"
 
-[[colors.color]]
-color = "0000ff"
-color_alias = "blu"
+  [[colors.color]]
+    color = "95a5a6"
+    color_alias = "grey"
+
+  [[colors.color]]
+    color = "e74c3c"
+    color_alias = "red"
+
+  [[colors.color]]
+    color = "2ecc71"
+    color_alias = "green"
+
+  [[colors.color]]
+    color = "3498db"
+    color_alias = "blue"
+
+  [[colors.color]]
+    color = "e67e22"
+    color_alias = "orange"
+
+  [[colors.color]]
+    color = "f1c40f"
+    color_alias = "yellow"
+
+  [[colors.color]]
+    color = "9b59b6"
+    color_alias = "purple"
+
+  [[colors.color]]
+    color = "ed64a6"
+    color_alias = "pink"
+
+  [[colors.color]]
+    color = "1abc9c"
+    color_alias = "teal"
+
+  [[colors.color]]
+    color = "2c3e50"
+    color_alias = "space"
 
 [lengths]
-units = [ "cm", "mm", "in", "px", "pt", "pc", "em", "ex", "ch", "rem", "vw", "vh", "vmin", "vmax", "%" ]
-default = "px"
+  units = [ "cm", "mm", "in", "px", "pt", "pc", "em", "ex", "ch", "rem", "vw", "vh", "vmin", "vmax", "%" ]
+  default = "px"
 
 [properties]
-[[properties.property]]
-# css syntax = background-color: $color|transparent|initial|inherit;
-property_name = "background-color"
-property_name_alias = "bc"
+  [[properties.property]]
+    # css syntax = background-color: $color|transparent|initial|inherit;
+    property_name = "background-color"
+    property_name_alias = "bc"
 
-keywords = [ "transparent", "intial", "inherit" ]
-keyword_aliases = [ "zero" ]
+    keywords = [ "transparent", "intial", "inherit" ]
+    keyword_aliases = [ "zero" ]
 
-data_types = ["keyword", "color"]
+    data_types = ["keyword", "color"]
 
-[[properties.property]]
-# css syntax = font-size: medium|xx-small|x-small|small|large|x-large|xx-large|smaller|larger|$length|initial|inherit;
-property_name = "font-size"
-property_name_alias = "fs"
+  [[properties.property]]
+    # css syntax = font-size: medium|xx-small|x-small|small|large|x-large|xx-large|smaller|larger|$length|initial|inherit;
+    property_name = "font-size"
+    property_name_alias = "fs"
 
-keywords = [ "medium", "xx-small", "x-small", "small", "large", "x-large", "xx-large", "smaller", "larger", "initial", "inherit" ]
-keyword_aliases = [ "md", "xxsm", "xsm", "sm", "lg", "xlg", "xxlg", "smr", "lgr" ]
+    keywords = [ "medium", "xx-small", "x-small", "small", "large", "x-large", "xx-large", "smaller", "larger", "initial", "inherit" ]
+    keyword_aliases = [ "md", "xxsm", "xsm", "sm", "lg", "xlg", "xxlg", "smr", "lgr" ]
 
-data_types = ["keyword", "length"]
+    data_types = ["keyword", "length"]
 "#;
     pub static ref THEME: &'static str = r#"
 /*************************************************************************/
