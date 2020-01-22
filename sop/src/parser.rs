@@ -49,7 +49,6 @@ impl OrgParser {
         }
 
         doc.handle_undetect_str(self.raw_str.len(), self.raw_str.len(), &self.raw_str);
-        println!("{:#?}", doc);
         doc
     }
     pub fn create_html(&self) -> String {
