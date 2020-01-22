@@ -1270,9 +1270,12 @@ lazy_static! {
 /*************************************************************************/
 
 *,
-*:after,
-*:before {
+::before,
+::after {
   box-sizing: inherit;
+  border-width: 0;
+  border-style: solid;
+  border-color: #e2e8f0;
 }
 
 html {
