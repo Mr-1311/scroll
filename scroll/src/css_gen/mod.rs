@@ -8,7 +8,7 @@ lazy_static! {
     static ref CONFIG: Config = {
         if let Ok(s) = std::fs::read_to_string("styles/style_config.toml") {
             match toml::from_str(&s) {
-                Ok(t) => t,
+                Ok(t) => return t,
                 Err(e) => println!(
                     "Error while parsing style_config.toml. Scroll will use default config for this time. Error: {}", e
                 ),
