@@ -463,7 +463,7 @@ lazy_static! {
     keywords = [ "intial", "inherit" ]
     keyword_aliases = [ "" ]
 
-    data_types = ["keyword", length]
+    data_types = ["keyword", "length"]
 
   [[properties.property]]
     ## css syntax = border-collapse: separate|collapse|initial|inherit;
