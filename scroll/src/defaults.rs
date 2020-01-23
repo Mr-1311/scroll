@@ -200,7 +200,7 @@ lazy_static! {
     property_name = "background-size"
     property_name_alias = "bs"
 
-    keywords = [ "auto", "cover", "contain" "intial", "inherit" ]
+    keywords = [ "auto", "cover", "contain", "intial", "inherit" ]
     keyword_aliases = [ "" ]
 
     data_types = ["keyword", "length"]
