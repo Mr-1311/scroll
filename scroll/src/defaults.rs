@@ -11,6 +11,10 @@ lazy_static! {
     <link rel="stylesheet" type="text/css" href="/scroll_style.css">
   </head>
   <body>
+    <div style="text-align: center; padding: 15px">
+      <a class="nav" href="/">HOME</a>
+      <hr style="width: 90%">
+    </div>
     <div class="container">
       {{ if title }}<h1 class="title">{title}</h1>{{ endif }}
       {{ if date }}<h1 class="date">{date}</h1>{{ endif }}
@@ -1285,6 +1289,7 @@ html {
 }
 
 body {
+  margin: 0;
   color: #212121;
   background-color: #FAFAFA;
   font-family: Merriweather, Georgia, serif;
@@ -1500,6 +1505,12 @@ footer a {
   text-align: center;
   margin: 0;
   opacity: 0.6;
+}
+
+.nav {
+  padding: 15px;
+  font-size: 2rem;
+  color: black;
 }
 "#;
 }
