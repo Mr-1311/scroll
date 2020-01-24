@@ -2,8 +2,7 @@ lazy_static! {
     pub static ref CONF: &'static str = r#"
     default_template = "default_template.html"
 "#;
-    pub static ref TEMPLATE: &'static str = r#"
-<!DOCTYPE html>
+    pub static ref TEMPLATE: &'static str = r#"<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8">
@@ -13,15 +12,17 @@ lazy_static! {
   </head>
   <body>
     <div class="container">
-      {page}
+      {{ if title }}<h1 class="title">{title}</h1>{{ endif }}
+      {{ if date }}<h1 class="date">{date}</h1>{{ endif }}
+      {{ if title }}<hr style="margin-bottom: 10rem;">{{ endif }}
+      <<page>>
     </div>
     <footer>
       Built with ✨ by <a href="https://github.com/metinUr/scroll">scroll</a>
     </footer>
   </body>
-</html> "#;
-    pub static ref CSS_DEFAULT: &'static str = r#"
-[responsive]
+</html>"#;
+    pub static ref CSS_DEFAULT: &'static str = r#"[responsive]
   [[responsive.query]]
     name = "sm"
     min_width = "640px"
@@ -648,7 +649,7 @@ lazy_static! {
   [[properties.property]]
     ## css syntax = flex-shrink: number|initial|inherit;
     property_name = "flex-shrink"
-    property_name_alias = "fs"
+    property_name_alias = "fsh"
 
     keywords = [ "intial", "inherit" ]
     keyword_aliases = [ "" ]
@@ -1460,11 +1461,16 @@ img {
   max-width: 100%;
 }
 
+hr {
+  background-color: #191919;
+  height: 2px;
+}
+
 footer {
   width: 100%;
   text-align: center;
   line-height: 2rem;
-  margin-bottom: 1rem;
+  padding: 3rem;
 }
 
 footer a {
@@ -1473,10 +1479,27 @@ footer a {
 
 .container {
   margin: 0 auto;
+  margin-top: 10rem;
   max-width: 90.0rem;
   width: 100%;
   padding-left: 2.0rem;
   padding-right: 2.0rem;
+}
+
+.title {
+  margin: 0;
+  margin-bottom: 1rem;
+  font-size: 5.4rem;
+  line-height: 6.2rem;
+  text-align: center;
+}
+
+.date {
+  font-size: 1.4rem;
+  line-height: 1rem;
+  text-align: center;
+  margin: 0;
+  opacity: 0.6;
 }
 "#;
 }
