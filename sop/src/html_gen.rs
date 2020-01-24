@@ -61,15 +61,24 @@ pub fn generate_html_for_block(
     style: &Option<String>,
 ) -> String {
     match block_type {
-        BlockType::SRC => format!(
-            "<pre><code{}>{}</code></pre>\n",
-            if let Some(s) = style {
-                format!(" class=\"{} {}\"", params, s)
-            } else {
-                format!(" class=\"{}\"", params)
-            },
-            value
-        ),
+        BlockType::SRC => {
+            let escaped_value = value;
+            let escaped_value = &escaped_value.replace('&', "&amp;");
+            let escaped_value = &escaped_value.replace('>', "&gt;");
+            let escaped_value = &escaped_value.replace('<', "&lt;");
+            let escaped_value = &escaped_value.replace('\'', "&#39;");
+            let escaped_value = &escaped_value.replace('"', "&quot;");
+
+            format!(
+                "<pre><code{}>{}</code></pre>\n",
+                if let Some(s) = style {
+                    format!(" class=\"{} {}\"", params, s)
+                } else {
+                    format!(" class=\"{}\"", params)
+                },
+                escaped_value
+            )
+        }
         BlockType::QUOTE => format!(
             "<blockquote{}>{}</blockquote>\n",
             if let Some(s) = style {
