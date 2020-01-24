@@ -18,7 +18,7 @@ mod css_gen;
 mod defaults;
 
 lazy_static! {
-    static ref BLACK_LIST: Vec<&'static str> = vec!["templates", "styles", "site", "scroll.toml"];
+    static ref BLACK_LIST: Vec<&'static str> = vec!["templates", "styles", "public", "scroll.toml"];
     static ref SITE_STYLES: HashSet<String> = HashSet::new();
     static ref SCROLL_CONFIG: ScrollConfig = {
         if let Ok(s) = std::fs::read_to_string("scroll.toml") {
@@ -99,7 +99,7 @@ fn build() {
         println!("No config file detected!\n scroll.toml file is required in scroll project root for site generation.");
         return;
     }
-    match fs::remove_dir_all("./site") {
+    match fs::remove_dir_all("./public") {
         Err(_) => (), //println!("Error while tring to delete old site. Error: {}", e),
         Ok(_) => (),  //println!("Older site deleted!"),
     }
@@ -116,7 +116,7 @@ fn build() {
         }
     }
 
-    if let Ok(mut f) = File::create("./site/scroll_style.css") {
+    if let Ok(mut f) = File::create("./public/scroll_style.css") {
         f.write_all(css_gen::generate_site_styles(site_styles).as_bytes())
             .unwrap();
     }
@@ -136,7 +136,7 @@ fn build() {
     }
 
     fn handle_site_path(path: &std::path::Path, is_org: bool) -> Option<String> {
-        let mut new_path = String::from("./site/");
+        let mut new_path = String::from("./public/");
         if let Some(p_str) = path.to_str() {
             if is_org {
                 if let Some(p) = p_str.get(2..p_str.len() - 4) {
@@ -156,14 +156,27 @@ fn build() {
             return None;
         }
 
-        fs::create_dir_all(new_path.get(..new_path.rfind("/").unwrap()).unwrap()).unwrap();
+        if let Ok(md) = fs::metadata(&path) {
+            if md.is_dir() {
+                fs::create_dir_all(&new_path).unwrap();
+            } else {
+                fs::create_dir_all(new_path.get(..new_path.rfind("/").unwrap()).unwrap()).unwrap();
+            }
+        }
 
         Some(new_path)
     }
 
     fn copy_file_to_site(path: &std::path::Path) {
         if let Some(p) = handle_site_path(path, false) {
-            fs::copy(path, p).unwrap();
+            if let Err(e) = fs::copy(&path, &p) {
+                println!(
+                    "Can't copy file from: {}, to: {}, skipping. Error: {}",
+                    &path.to_str().unwrap(),
+                    &p,
+                    e
+                );
+            }
         }
     }
 
@@ -174,27 +187,32 @@ fn build() {
             site_styles.insert(style.to_string());
         }
 
+        let page_html = OrgParser::generate_html(&ast.ast);
         let page_template: String;
+
         if let Some(t) = &ast.template {
             if let Ok(s) = std::fs::read_to_string(format!("templates/{}", t)) {
-                page_template = s.replace("{page}", &OrgParser::generate_html(&ast.ast));
+                page_template = s;
             } else {
                 println!(
                     "Error while reading this template: {}, scroll will use default template",
                     t
                 );
-                page_template = TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
+                page_template = TEMPLATE.to_string();
             }
         } else {
-            page_template = TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
-        };
-        // let page_template = TEMPLATE.replace("{page}", &OrgParser::generate_html(&ast.ast));
+            page_template = TEMPLATE.to_string();
+        }
 
         let mut tt = TinyTemplate::new();
         tt.add_template("tmp", &page_template).unwrap();
 
         let page = Page::new(ast);
-        let rendered = tt.render("tmp", &page).unwrap();
+
+        let rendered = tt
+            .render("tmp", &page)
+            .unwrap()
+            .replace("<<page>>", &page_html);
 
         if let Some(p) = handle_site_path(path, true) {
             File::create(p)
