@@ -137,7 +137,7 @@ fn handle_css(class_name: &str) -> Option<(String, String)> {
         Some(p) => p,
         None => {
             println!(
-                "This \"{}\" style will no effect on site, because didn't find alias on css config",
+                "\"{}\" style will no effect on site, because didn't find alias on css config",
                 &class_name
             );
             return None;
