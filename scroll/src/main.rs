@@ -76,10 +76,11 @@ fn main() {
         .about("Create Static Sites")
         .subcommand(
             App::new("new")
-                .about("Create new site")
+                .about("Create new site.")
                 .arg(Arg::with_name("site_name").index(1).required(true)),
         )
-        .subcommand(App::new("build").about("build the site"))
+        .subcommand(App::new("build").about("Build the site."))
+        .subcommand(App::new("serve").about("Serve static site for local usage and test."))
         .get_matches();
 
     match matches.subcommand() {
@@ -87,6 +88,7 @@ fn main() {
         ("new", Some(new_matches)) => {
             new(new_matches.value_of("site_name").unwrap());
         }
+        ("serve", Some(_)) => serve(),
         ("", None) => {
             println!("No subcommand was used, 'scroll -h' or 'scroll --help' for more information.")
         }
@@ -275,4 +277,24 @@ fn new(name: &str) {
         fs::create_dir(&path)?;
         Ok(path)
     }
+}
+
+fn serve() {
+    let host = "127.0.0.1";
+    let port = "1919";
+
+    let mut server = simple_server::Server::new(|request, mut response| {
+        match (request.method(), request.uri().path()) {
+            (&simple_server::Method::GET, "/") => {
+                response.status(simple_server::StatusCode::MOVED_PERMANENTLY);
+                response.header("Location", "/index.html");
+                Ok(response.body(Vec::new())?)
+            } /* other routes */
+            (_, _) => Ok(response.body(Vec::new())?),
+        }
+    });
+
+    server.set_static_directory("public");
+
+    server.listen(host, port);
 }
