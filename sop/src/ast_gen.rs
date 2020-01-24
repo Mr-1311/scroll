@@ -329,16 +329,21 @@ pub fn handle_text(raw_value: String) -> Vec<OrgElement> {
             cur_index = c.end();
         }
         if let Some(c) = cap.name("link") {
-            texts.push(OrgElement::Text(
-                raw_value.get(cur_index..c.start()).unwrap().to_owned(),
-            ));
+            if let Some(t) = raw_value.get(cur_index..c.start()) {
+                if !t.is_empty() {
+                    texts.push(OrgElement::Text(t.to_owned()))
+                }
+            }
             texts.push(create_link(c.as_str()));
             cur_index = c.end();
         }
     }
-    texts.push(OrgElement::Text(
-        raw_value.get(cur_index..).unwrap().to_owned(),
-    ));
+
+    if let Some(t) = raw_value.get(cur_index..) {
+        if !t.is_empty() {
+            texts.push(OrgElement::Text(t.to_owned()))
+        }
+    }
     texts
 }
 
