@@ -93,6 +93,24 @@ pub fn generate_html_for_block(
 }
 
 pub fn generate_html_for_paragraph(el: &[OrgElement], style: &Option<String>) -> String {
+    if el.len() == 1 {
+        if let OrgElement::Link {
+            link_type, link, ..
+        } = &el[0]
+        {
+            if link_type == &LinkType::IMG {
+                return format!(
+                    "<img{} src=\"{}\" alt=\"img\"/>",
+                    if let Some(s) = style {
+                        format!(" class=\"{}\"", s)
+                    } else {
+                        "".to_string()
+                    },
+                    link
+                );
+            }
+        }
+    }
     format!(
         "<p{}>{}</p>\n",
         if let Some(s) = style {
