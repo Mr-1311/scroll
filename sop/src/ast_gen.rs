@@ -502,6 +502,11 @@ impl OrgDoc {
                     if !is_section {
                         v.push(child);
                     }
+                    if let Some(value) = &s_style {
+                        for val in value.split_whitespace() {
+                            self.styles.insert(val.to_string());
+                        }
+                    }
                     v.push(OrgElement::Section {
                         childs: Vec::new(),
                         style: s_style,
