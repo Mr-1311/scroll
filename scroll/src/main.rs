@@ -79,7 +79,14 @@ fn main() {
                 .about("Create new site.")
                 .arg(Arg::with_name("site_name").index(1).required(true)),
         )
-        .subcommand(App::new("build").about("Build the site."))
+        .subcommand(
+            App::new("build").about("Build the site.").arg(
+                Arg::with_name("then-serve")
+                    .short("s")
+                    .long("then-serve")
+                    .help("Start serve and watch on local after build the site."),
+            ),
+        )
         .subcommand(
             App::new("serve")
                 .about("Serve static site for local usage and test.")
@@ -90,17 +97,26 @@ fn main() {
                         .help("Specify port to serve.")
                         .takes_value(true)
                         .default_value("1919"),
+                )
+                .arg(
+                    Arg::with_name("no-watch")
+                        .short("n")
+                        .long("no-watch")
+                        .help("Specify watch file changes or not."),
                 ),
         )
         .subcommand(App::new("watch").about("Only Watch and Rebuild files."))
         .get_matches();
 
     match matches.subcommand() {
-        ("build", Some(_)) => build(),
+        ("build", Some(matches)) => build(matches.is_present("then-serve")),
         ("new", Some(matches)) => {
             new(matches.value_of("site_name").unwrap());
         }
-        ("serve", Some(matches)) => serve(matches.value_of("port").unwrap()),
+        ("serve", Some(matches)) => serve(
+            matches.value_of("port").unwrap(),
+            matches.is_present("no-watch"),
+        ),
         ("watch", Some(_)) => watch(),
         ("", None) => {
             println!("No subcommand was used, 'scroll -h' or 'scroll --help' for more information.")
@@ -109,7 +125,7 @@ fn main() {
     }
 }
 
-fn build() {
+fn build(is_serve: bool) {
     if !fs::metadata("./scroll.toml").is_ok() {
         println!("No config file detected!\n scroll.toml file is required in scroll project root for site generation.");
         return;
@@ -118,6 +134,7 @@ fn build() {
         Err(_) => (), //println!("Error while tring to delete old site. Error: {}", e),
         Ok(_) => (),  //println!("Older site deleted!"),
     }
+    println!("Building..");
 
     let mut site_styles: HashSet<String> = HashSet::new();
 
@@ -236,6 +253,12 @@ fn build() {
                 .unwrap();
         }
     }
+
+    println!("Builded site under 'public' folder!\n");
+
+    if is_serve {
+        serve("1919", false);
+    }
 }
 
 fn new(name: &str) {
@@ -297,7 +320,7 @@ fn new(name: &str) {
     }
 }
 
-fn serve(port: &str) {
+fn serve(port: &str, no_watch: bool) {
     let host = "127.0.0.1";
     let p = port.to_owned();
 
@@ -315,11 +338,19 @@ fn serve(port: &str) {
     server.set_static_directory("public");
     use std::thread;
 
-    thread::spawn(move || {
+    let server = thread::spawn(move || {
         server.listen(host, &p);
     });
+
     println!("Serving files under 'public' on port: '{}'", port);
-    watch();
+    println!("Go \"127.0.0.1:{}\"\n", port);
+    if !no_watch {
+        let watcher = thread::spawn(move || {
+            watch();
+        });
+        watcher.join().unwrap();
+    }
+    server.join().unwrap();
 }
 
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
@@ -338,9 +369,7 @@ fn watch() {
                 if let notify::DebouncedEvent::Write(path) = event {
                     if let Some(s) = path.to_str() {
                         if !s.contains("/public") {
-                            println!("Building..");
-                            build();
-                            println!("Rebuilded.",);
+                            build(false);
                         }
                     }
                 }
