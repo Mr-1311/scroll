@@ -73,22 +73,35 @@ fn main() {
     let matches = App::new("Scroll")
         .version("0.1.0")
         .author("Metin Ur <metinur.1311@gmail.com>")
-        .about("Create Static Sites")
+        .about("Magical Static Site Generator")
         .subcommand(
             App::new("new")
                 .about("Create new site.")
                 .arg(Arg::with_name("site_name").index(1).required(true)),
         )
         .subcommand(App::new("build").about("Build the site."))
-        .subcommand(App::new("serve").about("Serve static site for local usage and test."))
+        .subcommand(
+            App::new("serve")
+                .about("Serve static site for local usage and test.")
+                .arg(
+                    Arg::with_name("port")
+                        .short("p")
+                        .long("port")
+                        .help("Specify port to serve.")
+                        .takes_value(true)
+                        .default_value("1919"),
+                ),
+        )
+        .subcommand(App::new("watch").about("Only Watch and Rebuild files."))
         .get_matches();
 
     match matches.subcommand() {
         ("build", Some(_)) => build(),
-        ("new", Some(new_matches)) => {
-            new(new_matches.value_of("site_name").unwrap());
+        ("new", Some(matches)) => {
+            new(matches.value_of("site_name").unwrap());
         }
-        ("serve", Some(_)) => serve(),
+        ("serve", Some(matches)) => serve(matches.value_of("port").unwrap()),
+        ("watch", Some(_)) => watch(),
         ("", None) => {
             println!("No subcommand was used, 'scroll -h' or 'scroll --help' for more information.")
         }
@@ -284,9 +297,9 @@ fn new(name: &str) {
     }
 }
 
-fn serve() {
+fn serve(port: &str) {
     let host = "127.0.0.1";
-    let port = "1919";
+    let p = port.to_owned();
 
     let mut server = simple_server::Server::new(|request, mut response| {
         match (request.method(), request.uri().path()) {
@@ -294,12 +307,45 @@ fn serve() {
                 response.status(simple_server::StatusCode::MOVED_PERMANENTLY);
                 response.header("Location", "/index.html");
                 Ok(response.body(Vec::new())?)
-            } /* other routes */
+            }
             (_, _) => Ok(response.body(Vec::new())?),
         }
     });
 
     server.set_static_directory("public");
+    use std::thread;
 
-    server.listen(host, port);
+    thread::spawn(move || {
+        server.listen(host, &p);
+    });
+    println!("Serving files under 'public' on port: '{}'", port);
+    watch();
+}
+
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use std::time::Duration;
+
+fn watch() {
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(2)).unwrap();
+    watcher.watch("./", RecursiveMode::Recursive).unwrap();
+
+    println!("Whatching files..",);
+    loop {
+        match rx.recv() {
+            Ok(event) => {
+                if let notify::DebouncedEvent::Write(path) = event {
+                    if let Some(s) = path.to_str() {
+                        if !s.contains("/public") {
+                            println!("Building..");
+                            build();
+                            println!("Rebuilded.",);
+                        }
+                    }
+                }
+            }
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    }
 }
