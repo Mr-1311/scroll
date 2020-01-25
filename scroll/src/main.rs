@@ -263,6 +263,11 @@ fn new(name: &str) {
                 Err(err) => println!("Error while createing theme file. Error: {}", err),
                 Ok(_) => (),
             }
+
+            let path = format!("{}/{}", name, "logo.png");
+            fs::File::create(path)
+                .unwrap()
+                .write_all(include_bytes!("../../scroll_logo.png"));
         }
     }
 
