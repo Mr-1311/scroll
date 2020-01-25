@@ -159,6 +159,7 @@ fn handle_class_name(c_name: &str, p_selectors: &Option<Vec<String>>) -> String 
     class_name = class_name.replace(":", "\\:");
     class_name = class_name.replace(".", "\\.");
     class_name = class_name.replace("%", "\\%");
+    class_name = class_name.replace("#", "\\#");
     if let Some(v) = p_selectors {
         for s in v {
             class_name.push(':');
@@ -208,7 +209,6 @@ fn handle_prop_value(
                 }
                 "color" => {
                     if let Some(v) = handle_color_value(arg) {
-                        value.push('#');
                         value.push_str(&v);
                         value.push(' ');
                         break;
@@ -260,6 +260,10 @@ fn handle_color_value(arg: &str) -> Option<String> {
     let p: Vec<&str> = arg.split("_").collect();
     let l = p.len();
 
+    if l == 1 && p[0].starts_with("#") {
+        return Some(arg.to_string());
+    }
+
     if l >= 1 {
         if let Some(c) = CONFIG.colors.color.iter().find(|&x| x.color_alias == p[0]) {
             color = Some(c.color.to_string());
@@ -268,19 +272,19 @@ fn handle_color_value(arg: &str) -> Option<String> {
         }
     }
     if l >= 2 {
-        let range = match CONFIG.colors.range {
+        match CONFIG.colors.range {
             Some(r) => {
                 if let Ok(i) = p[1].parse::<u64>() {
                     color = linear_interpolate_color(&color.unwrap(), r, i);
                 } else {
-                    return color;
+                    return Some(format!("#{}", color.unwrap()));
                 }
             }
-            None => return color,
+            None => return Some(format!("#{}", color.unwrap())),
         };
     }
     if l >= 3 {
-        let range = match CONFIG.colors.transparency_range {
+        match CONFIG.colors.transparency_range {
             Some(r) => {
                 if let Ok(i) = p[2].parse::<u64>() {
                     let mut w_norm = i as f32 / r as f32;
@@ -293,51 +297,61 @@ fn handle_color_value(arg: &str) -> Option<String> {
                         format!("{:x}", lerp(0x00, 0xff, w_norm))
                     ));
                 } else {
-                    return color;
+                    return Some(format!("#{}", color.unwrap()));
                 }
             }
-            None => return color,
+            None => return Some(format!("#{}", color.unwrap())),
         };
     }
 
     fn linear_interpolate_color(color: &str, max: u64, weigth: u64) -> Option<String> {
+        if color.len() != 6 {
+            return Some(color.to_string());
+        }
+
         let mut w_norm = weigth as f32 / max as f32;
         if weigth > max {
             w_norm = 1.0;
         }
-        let mut new_color: Option<String> = None;
-        let white = i64::from_str_radix("ffffff", 16).unwrap();
-        let black = i64::from_str_radix("000000", 16).unwrap();
-        match i64::from_str_radix(color, 16) {
-            Ok(c) => {
-                if w_norm > 0.5 {
-                    new_color = Some(format!("{:x}", lerp(c, black, (w_norm - 0.5) * 2.0)));
-                } else if w_norm < 0.5 {
-                    new_color = Some(format!("{:x}", lerp(c, white, (0.5 - w_norm) * 2.0)));
-                } else {
-                    new_color = Some(color.to_string());
-                }
-            }
-            Err(e) => println!("Error while parsing color. Color: {}. Error: {}", color, e),
+
+        let mut rgb = Vec::new();
+        if let Ok(r) = i64::from_str_radix(color.get(..2).unwrap(), 16) {
+            rgb.push(r);
+        } else {
+            return Some(color.to_string());
         }
-        if let Some(c) = &new_color {
-            let dif = 6 - c.len();
-            if dif > 0 {
-                let mut new_c = String::new();
-                for _ in 0..dif {
-                    new_c.push('0');
-                }
-                new_c.push_str(&c);
-                new_color = Some(new_c);
-            }
+        if let Ok(g) = i64::from_str_radix(color.get(2..4).unwrap(), 16) {
+            rgb.push(g);
+        } else {
+            return Some(color.to_string());
         }
-        new_color
+        if let Ok(b) = i64::from_str_radix(color.get(4..).unwrap(), 16) {
+            rgb.push(b);
+        } else {
+            return Some(color.to_string());
+        }
+
+        let mut new_color = "".to_string();
+
+        if w_norm > 0.5 {
+            for c in rgb {
+                new_color.push_str(&format!("{:02x}", lerp(c, 0x00, (w_norm - 0.5) * 2.0)));
+            }
+        } else if w_norm < 0.5 {
+            for c in rgb {
+                new_color.push_str(&format!("{:02x}", lerp(c, 0xFF, (0.5 - w_norm) * 2.0)));
+            }
+        } else {
+            new_color = color.to_string();
+        }
+
+        Some(new_color)
     }
     fn lerp(from: i64, to: i64, t: f32) -> i64 {
         from + ((to - from) as f32 * t) as i64
     }
 
-    color
+    Some(format!("#{}", color.unwrap()))
 }
 fn handle_length_value(arg: &str) -> Option<String> {
     let value: Option<String> = None;
