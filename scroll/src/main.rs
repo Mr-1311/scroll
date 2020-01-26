@@ -254,7 +254,7 @@ fn build(is_serve: bool) {
         }
     }
 
-    println!("Builded site under 'public' folder!\n");
+    println!("Site builded under 'public' folder!\n");
 
     if is_serve {
         serve("1919", false);
@@ -276,6 +276,14 @@ fn new(name: &str) {
                     match create_file_w_content(&path, "default_template.html", &defaults::TEMPLATE)
                     {
                         Err(e) => println!("Error while creating default template. Error: {}", e),
+                        Ok(_) => (),
+                    }
+                    match create_file_w_content(
+                        &path,
+                        "empty_template.html",
+                        &defaults::EMPTY_TEMPLATE,
+                    ) {
+                        Err(e) => println!("Error while creating empty template. Error: {}", e),
                         Ok(_) => (),
                     }
                 }
@@ -306,6 +314,9 @@ fn new(name: &str) {
                 .write_all(include_bytes!("../../scroll_logo.png"));
         }
     }
+
+    println!("Site created! You can now go and visit your site!");
+    println!("    'cd {}'\n    'scroll build --then-serve'", name);
 
     fn create_file_w_content(dir: &str, name: &str, content: &str) -> std::io::Result<()> {
         let path = format!("{}/{}", dir, name);
