@@ -2,6 +2,19 @@ lazy_static! {
     pub static ref CONF: &'static str = r#"
     default_template = "default_template.html"
 "#;
+    pub static ref INDEX: &'static str = r#"#+template: empty_template.html
+* #+style: bc-#15191A w-100% minh-100vh dis-flex fdir-column jc-center ai-center ta-center
+#+style: m-50 w-150
+[[./logo.png]]
+
+#+style: fw-100 letspa-19 clr-#A69E99 fs-60 tsha-2px-2px-5px-black fm-'arial'
+SCROLL
+#+style: letspa-9 clr-#A69E99 fs-30 tsha-2px-2px-5px-black fm-'arial'
+MAGICAL STATIC SITE GENERATOR
+
+#+style: letspa-4 fs-19 fm-'arial'
+[[https://github.com/metinUr/scroll][contribute]]
+"#;
     pub static ref TEMPLATE: &'static str = r#"<!DOCTYPE html>
 <html>
   <head>
@@ -912,7 +925,7 @@ lazy_static! {
     keywords = [ "none", "intial", "inherit" ]
     keyword_aliases = [ "" ]
 
-    data_types = ["keyword", "length]
+    data_types = ["keyword", "length"]
 
   [[properties.property]]
     ## css syntax = max-width: length|initial|inherit;
