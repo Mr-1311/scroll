@@ -902,7 +902,7 @@ lazy_static! {
     keywords = [ "none", "intial", "inherit" ]
     keyword_aliases = [ "" ]
 
-    data_types = ["keyword", "lenght"]
+    data_types = ["keyword", "length"]
 
   [[properties.property]]
     ## css syntax = min-height: none|length|initial|inherit;
@@ -912,7 +912,7 @@ lazy_static! {
     keywords = [ "none", "intial", "inherit" ]
     keyword_aliases = [ "" ]
 
-    data_types = ["keyword", "lenght"]
+    data_types = ["keyword", "length]
 
   [[properties.property]]
     ## css syntax = max-width: length|initial|inherit;
@@ -922,7 +922,7 @@ lazy_static! {
     keywords = [ "intial", "inherit" ]
     keyword_aliases = [ "" ]
 
-    data_types = ["keyword", "lenght"]
+    data_types = ["keyword", "length"]
 
   [[properties.property]]
     ## css syntax = min-width: length|initial|inherit;
@@ -932,7 +932,7 @@ lazy_static! {
     keywords = [ "intial", "inherit" ]
     keyword_aliases = [ "" ]
 
-    data_types = ["keyword", "lenght"]
+    data_types = ["keyword", "length"]
 
   [[properties.property]]
     ## css syntax = mix-blend-mode: normal|multiply|screen|overlay|darken|lighten|color-dodge|color-burn|difference|exclusion|hue|saturation|color|luminosity;
