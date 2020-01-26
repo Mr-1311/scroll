@@ -270,6 +270,11 @@ fn new(name: &str) {
                 Ok(_) => (),
             }
 
+            match create_file_w_content(name, "index.org", &defaults::INDEX) {
+                Err(err) => println!("Error while createing index.org file. Error: {}", err),
+                Ok(_) => (),
+            }
+
             match create_new_dir(name, "templates") {
                 Err(err) => println!("Error while creating templates folder. Error: {}", err),
                 Ok(path) => {
