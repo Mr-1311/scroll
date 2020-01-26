@@ -26,6 +26,20 @@ lazy_static! {
     </footer>
   </body>
 </html>"#;
+    pub static ref EMPTY_TEMPLATE: &'static str = r#"
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="/theme.css">
+    <link rel="stylesheet" type="text/css" href="/scroll_style.css">
+  </head>
+  <body>
+    <<page>>
+  </body>
+</html>
+"#;
     pub static ref CSS_DEFAULT: &'static str = r#"[responsive]
   [[responsive.query]]
     name = "sm"
@@ -101,16 +115,6 @@ lazy_static! {
 
 [properties]
   [[properties.property]]
-    ## css syntax = background-color: $color|transparent|initial|inherit;
-    property_name = "background-color"
-    property_name_alias = "bc"
-
-    keywords = [ "transparent", "intial", "inherit" ]
-    keyword_aliases = [ "zero" ]
-
-    data_types = ["keyword", "color"]
-
-  [[properties.property]]
     ## css syntax = align-content: stretch|center|flex-start|flex-end|space-between|space-around|initial|inherit;
     property_name = "align-content"
     property_name_alias = "ac"
@@ -169,6 +173,26 @@ lazy_static! {
     keyword_aliases = [ "bbox", "pbox", "cbox" ]
 
     data_types = ["keyword"]
+
+  [[properties.property]]
+    ## css syntax = background-color: $color|transparent|initial|inherit;
+    property_name = "background-color"
+    property_name_alias = "bc"
+
+    keywords = [ "transparent", "intial", "inherit" ]
+    keyword_aliases = [ "zero" ]
+
+    data_types = ["keyword", "color"]
+
+  [[properties.property]]
+    ## css syntax = background-image: url|none|initial|inherit;
+    property_name = "background-image"
+    property_name_alias = "bi"
+
+    keywords = [ "none", "intial", "inherit" ]
+    keyword_aliases = [ "" ]
+
+    data_types = ["keyword", "url"]
 
   [[properties.property]]
     ## css syntax = background-origin: padding-box|border-box|content-box|initial|inherit;
@@ -719,6 +743,16 @@ lazy_static! {
     keyword_aliases = [ "n", "l", "r" ]
 
     data_types = ["keyword"]
+
+  [[properties.property]]
+    ## css syntax = font-family: family-name|generic-family|initial|inherit;
+    property_name = "font-family"
+    property_name_alias = "fm"
+
+    keywords = [ "initial", "inherit" ]
+    keyword_aliases = [ "" ]
+
+    data_types = ["keyword", "string"]
 
   [[properties.property]]
     ## css syntax = font-size: medium|xx-small|x-small|small|large|x-large|xx-large|smaller|larger|$length|initial|inherit;
