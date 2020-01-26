@@ -156,10 +156,20 @@ fn handle_css(class_name: &str) -> Option<(String, String)> {
 }
 fn handle_class_name(c_name: &str, p_selectors: &Option<Vec<String>>) -> String {
     let mut class_name = c_name.to_string();
+
     class_name = class_name.replace(":", "\\:");
     class_name = class_name.replace(".", "\\.");
     class_name = class_name.replace("%", "\\%");
     class_name = class_name.replace("#", "\\#");
+    class_name = class_name.replace("(", "\\(");
+    class_name = class_name.replace(")", "\\)");
+    class_name = class_name.replace("'", "\\'");
+    class_name = class_name.replace("/", "\\/");
+    class_name = class_name.replace("+", "\\+");
+    class_name = class_name.replace("=", "\\=");
+    class_name = class_name.replace("?", "\\?");
+    class_name = class_name.replace("&", "\\&");
+
     if let Some(v) = p_selectors {
         for s in v {
             class_name.push(':');
@@ -228,7 +238,24 @@ fn handle_prop_value(
                         break;
                     }
                 }
-                _ => (),
+                "url" => {
+                    if let Some(v) = handle_url_value(arg) {
+                        value.push_str(&v);
+                        value.push(' ');
+                        break;
+                    }
+                }
+                "string" => {
+                    if let Some(v) = handle_string_value(arg) {
+                        value.push_str(&v);
+                        value.push(' ');
+                        break;
+                    }
+                }
+                _ => println!(
+                    "\nCSS GENERATOR :: Can't handle '{}' data type. possible mistyped.\n",
+                    &d_type
+                ),
             }
         }
     }
@@ -378,6 +405,20 @@ fn handle_number_value(arg: &str) -> Option<String> {
         return Some(arg.to_string());
     }
     value
+}
+fn handle_url_value(arg: &str) -> Option<String> {
+    if arg.starts_with("url(") && arg.ends_with(")") {
+        return Some(arg.to_string());
+    }
+
+    None
+}
+fn handle_string_value(arg: &str) -> Option<String> {
+    if arg.starts_with("'") && arg.ends_with("'") {
+        return Some(arg.to_string());
+    }
+
+    None
 }
 
 fn parse_style(class_name: &str) -> Option<Style> {
