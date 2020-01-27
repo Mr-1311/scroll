@@ -139,6 +139,11 @@ pub fn build(is_serve: bool) {
 
     fn copy_file_to_site(path: &std::path::Path) {
         if let Some(p) = handle_site_path(path, false) {
+            if let Ok(md) = fs::metadata(&path) {
+                if md.is_dir() {
+                    return;
+                }
+            }
             if let Err(e) = fs::copy(&path, &p) {
                 println!(
                     "Can't copy file from: {}, to: {}, skipping. Error: {}",
