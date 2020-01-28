@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 lazy_static! {
     pub static ref CONFIG: Config = {
-        if let Ok(s) = std::fs::read_to_string("styles/style_config.toml") {
+        if let Ok(s) = std::fs::read_to_string("style_config.toml") {
             match toml::from_str(&s) {
                 Ok(t) => return t,
                 Err(e) => println!(

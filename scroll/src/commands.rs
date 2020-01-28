@@ -12,7 +12,8 @@ use std::io::prelude::*;
 use tinytemplate::TinyTemplate;
 
 lazy_static! {
-    static ref BLACK_LIST: Vec<&'static str> = vec!["templates", "styles", "public", "scroll.toml"];
+    static ref BLACK_LIST: Vec<&'static str> =
+        vec!["templates", "style_config.toml", "public", "scroll.toml"];
     static ref SITE_STYLES: HashSet<String> = HashSet::new();
     static ref SCROLL_CONFIG: ScrollConfig = {
         if let Ok(s) = std::fs::read_to_string("scroll.toml") {
@@ -218,6 +219,14 @@ pub fn new(name: &str) {
                 Ok(_) => (),
             }
 
+            match create_file_w_content(name, "style_config.toml", &defaults::CSS_DEFAULT) {
+                Err(e) => println!(
+                    "Error while creating default style_config.toml file. Error: {}",
+                    e
+                ),
+                Ok(_) => (),
+            }
+
             match create_new_dir(name, "templates") {
                 Err(err) => println!("Error while creating templates folder. Error: {}", err),
                 Ok(path) => {
@@ -232,20 +241,6 @@ pub fn new(name: &str) {
                         &defaults::EMPTY_TEMPLATE,
                     ) {
                         Err(e) => println!("Error while creating empty template. Error: {}", e),
-                        Ok(_) => (),
-                    }
-                }
-            }
-
-            match create_new_dir(name, "styles") {
-                Err(err) => println!("Error while creating styles folder. Error: {}", err),
-                Ok(path) => {
-                    match create_file_w_content(&path, "style_config.toml", &defaults::CSS_DEFAULT)
-                    {
-                        Err(e) => println!(
-                            "Error while creating default style_config.toml file. Error: {}",
-                            e
-                        ),
                         Ok(_) => (),
                     }
                 }
