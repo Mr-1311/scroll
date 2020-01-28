@@ -22,6 +22,7 @@ MAGICAL STATIC SITE GENERATOR
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="/theme.css">
     <link rel="stylesheet" type="text/css" href="/scroll_style.css">
+    {{ if title }}<title>{title}</title>{{ endif }}
   </head>
   <body>
     <div style="text-align: center; padding: 15px">
@@ -47,6 +48,7 @@ MAGICAL STATIC SITE GENERATOR
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="/theme.css">
     <link rel="stylesheet" type="text/css" href="/scroll_style.css">
+    {{ if title }}<title>{title}</title>{{ endif }}
   </head>
   <body>
     <<page>>
