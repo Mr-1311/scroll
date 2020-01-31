@@ -1,6 +1,6 @@
 
 - - -
-<p align="center"><img src="./scroll_logo.png" alt="Scroll"/></p>
+<p align="center"><img src="./scroll_logo.png" alt="Scroll" height="128" width="128"/></p>
 <h1 align="center">SCROLL</h1>
 <p align="center"><b>MAGICAL STATIC SITE GENERATOR</b></p>
 <p align="center">
