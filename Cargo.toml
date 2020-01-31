@@ -1,5 +1,5 @@
 [package]
-name = "scroll"
+name = "scroll-ssg"
 version = "0.1.0"
 authors = ["metin ur <metinur.1311@gmail.com>"]
 description = "Magical Static Site Generator"
