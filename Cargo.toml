@@ -15,3 +15,7 @@ members = [
     "sop",
     "scroll",
 ]
+
+[[bin]]
+name = "scroll"
+path = "scroll/src/main.rs"
