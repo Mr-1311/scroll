@@ -34,7 +34,7 @@ pub fn app() {
                     Arg::with_name("no-watch")
                         .short("n")
                         .long("no-watch")
-                        .help("Specify watch file changes or not."),
+                        .help("Don't watch file changes, only serve."),
                 ),
         )
         .subcommand(App::new("watch").about("Only Watch and Rebuild files."))
