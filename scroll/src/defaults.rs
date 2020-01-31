@@ -12,8 +12,14 @@ SCROLL
 #+style: letspa-9 clr-#A69E99 fs-30 tsha-2px-2px-5px-black fm-'arial'
 MAGICAL STATIC SITE GENERATOR
 
-#+style: letspa-4 fs-19 fm-'arial'
+** #+style: dis-flex
+
+#+style: letspa-4 fs-19 fm-'arial' mr-50
 [[https://github.com/metinUr/scroll][contribute]]
+
+#+style: letspa-4 fs-19 fm-'arial'
+[[https://metinur.github.io/scroll-doc/][learn more]]
+
 "#;
     pub static ref TEMPLATE: &'static str = r#"<!DOCTYPE html>
 <html>
@@ -55,7 +61,10 @@ MAGICAL STATIC SITE GENERATOR
   </body>
 </html>
 "#;
-    pub static ref CSS_DEFAULT: &'static str = r#"[responsive]
+    pub static ref CSS_DEFAULT: &'static str = r#"## Scroll CSS-gen config file
+## For more information visit https://metinur.github.io/scroll-doc/docs/styling.html
+
+[responsive]
   [[responsive.query]]
     name = "sm"
     min_width = "640px"
