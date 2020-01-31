@@ -1,7 +1,7 @@
 use regex::Regex;
 use std::collections::HashSet;
 
-use crate::html_gen::*;
+use crate::sop::html_gen::*;
 lazy_static! {
     pub static ref REGEX_ALL: Regex = Regex::new(
         r"(?m)(?P<headline>^\*+ .*\n?)|(?P<list>^[ \t]*(?:-|\+|[ \t]+\*|\d+\.|\d+\)) .*\n?)|(?P<keyword>^[ \t]*#\+.*:.*\n)|(?P<table>^ *\|.*\n)|(?P<block>#\+(?i)begin(?-i)_.+\n(?:.*\n)*?\s*#\+(?i)end(?-i)_.+)"

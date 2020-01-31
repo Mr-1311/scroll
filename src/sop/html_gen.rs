@@ -1,4 +1,4 @@
-use crate::ast_gen::{BlockType, LinkType, ListType, OrgElement};
+use crate::sop::ast_gen::{BlockType, LinkType, ListType, OrgElement};
 
 pub fn generate_html_for_text(t: &[OrgElement]) -> String {
     let mut out = String::new();

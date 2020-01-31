@@ -6,6 +6,7 @@ use walkdir::{DirEntry, WalkDir};
 
 use crate::css_gen;
 use crate::defaults;
+use crate::sop;
 use sop::ast_gen::OrgDoc;
 use sop::parser::OrgParser;
 use std::io::prelude::*;
@@ -254,7 +255,7 @@ pub fn new(name: &str) {
             let path = format!("{}/{}", name, "logo.png");
             fs::File::create(path)
                 .unwrap()
-                .write_all(include_bytes!("../../scroll_logo.png"))
+                .write_all(include_bytes!("../scroll_logo.png"))
                 .unwrap();
         }
     }

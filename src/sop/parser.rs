@@ -1,5 +1,5 @@
-use crate::html_gen::*;
-use crate::{
+use crate::sop::html_gen::*;
+use crate::sop::{
     ast_gen, ast_gen::handle_section_style, ast_gen::handle_style, ast_gen::OrgDoc,
     ast_gen::OrgElement,
 };
@@ -51,6 +51,7 @@ impl OrgParser {
         doc.handle_undetect_str(self.raw_str.len(), self.raw_str.len(), &self.raw_str);
         doc
     }
+    #[allow(dead_code)]
     pub fn create_html(&self) -> String {
         OrgParser::generate_html(&self.create_ast().ast)
     }
