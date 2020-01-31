@@ -314,7 +314,7 @@ use std::time::Duration;
 pub fn watch() {
     let (tx, rx) = std::sync::mpsc::channel();
 
-    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(2)).unwrap();
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1)).unwrap();
     watcher.watch("./", RecursiveMode::Recursive).unwrap();
 
     println!("Whatching files..",);
