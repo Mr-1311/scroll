@@ -1,5 +1,16 @@
-[workspace]
+[package]
+name = "scroll"
+version = "0.1.0"
+authors = ["metin ur <metinur.1311@gmail.com>"]
+description = "Magical Static Site Generator"
+repository = "https://github.com/metinUr/scroll"
+readme = "README.md"
+keywords = ["static", "site", "generator", "ssg"]
+categories = ["command-line-utilities"]
+license = "MIT"
+edition = "2018"
 
+[workspace]
 members = [
     "sop",
     "scroll",
