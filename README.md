@@ -12,11 +12,18 @@
 
 ## Getting Started
 ### Installation
+Build from source:
 ```
 git clone https://github.com/metinUr/scroll.git
 cd scroll
 cargo build --release
 ```
+
+Scroll also on crate.io with scroll-ssg name, to install from crates.io:
+```
+cargo install scroll-ssg
+```
+
 ### Quick Start
 ```
 scroll new <site_name>
