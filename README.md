@@ -19,7 +19,7 @@ cd scroll
 cargo build --release
 ```
 
-Scroll also on crate.io with scroll-ssg name, to install from crates.io:
+Scroll also on crates.io with scroll-ssg name, to install from crates.io:
 ```
 cargo install scroll-ssg
 ```
